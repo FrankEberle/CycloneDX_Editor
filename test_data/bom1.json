@@ -1,0 +1,29 @@
+{
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.6",
+    "metadata": {
+
+    },
+    "components": [
+        {
+            "bom-ref": "123",
+            "name": "OpenSSL",
+            "type": "library",
+            "version": "3.0.1",
+            "components": [
+                {
+                    "bom-ref": "333",
+                    "name": "zlib",
+                    "type": "library",
+                    "version": "0.8.15"
+                }
+            ]
+        },
+        {
+            "bom-ref": "222",
+            "name": "A very very very very very very longggggggg nameeeeee",
+            "type": "library",
+            "version": "1.2.3"
+        }
+    ]
+}
