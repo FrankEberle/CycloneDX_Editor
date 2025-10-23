@@ -1,9 +1,11 @@
+import React from 'react';
 import FormControl from '@mui/material/FormControl';
 import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
-import React from 'react';
 
 import * as CycloneDX from './cyclonedx';
+import Properties from './Properties';
+import Licenses from './Licenses';
 
 export default function ComponentEdit({component, changeValue, focusLoss}) {
     const typeValues = CycloneDX.getComponentTypes();
@@ -57,7 +59,7 @@ export default function ComponentEdit({component, changeValue, focusLoss}) {
                 }}
             >
                 { options.map((v) => (
-                    <option value={v}>{v}</option>
+                    <option key={v} value={v}>{v}</option>
                 ))}
             </TextField>
         );
@@ -85,6 +87,8 @@ export default function ComponentEdit({component, changeValue, focusLoss}) {
                 <CmpTextField label='Version' field='version' value={component["version"]}/>
                 <CmpTextField label='PURL' field='purl' value={component["purl"]}/>
                 <CmpTextField label='CPE' field='cpe' value={component["cpe"]}/>
+                <Licenses licenses={component.licenses} changeValue={changeValue}/>
+                <Properties properties={component.properties} changeValue={changeValue}/>
             </Stack>
         </FormControl>
     );

@@ -18,6 +18,7 @@ import './App.css';
 
 import DrawerMenu from './DrawerMenu';
 import ComponentsView from './ComponentsView';
+import SaveDialog from './SaveDialog';
 import * as CycloneDX from './cyclonedx';
 
 // Load json schema
@@ -86,14 +87,31 @@ async function loadBom(setBom) {
   setBom(bom);
 }
 
+function saveBom(bom, filename) {
+  console.log("Save");
+  const bomCleaned = CycloneDX.cleanBom(JSON.parse(JSON.stringify(bom)));
+  const json = JSON.stringify(bomCleaned, null, "  ");
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function App() {
   const [bom, setBom] = React.useState(CycloneDX.emptyBom());
   const [view, setView] = React.useState('metadata');
+  const [showSaveDialog, setShowSaveDialog] = React.useState(false);
 
   function bomLoaded(newBom) {
-    console.log("bomLoaded()");
     if (newBom["components"] === undefined) bom["components"] = Array();
     CycloneDX.prepareBom(newBom);
+    console.log(newBom);
     setBom(newBom);
   }
 
@@ -116,7 +134,7 @@ function App() {
       {
         label: "Save",
         icon: <SaveIcon/>,
-        action: () => {},
+        action: () => {setShowSaveDialog(true)},
       },
     ],
     [
@@ -144,6 +162,11 @@ function App() {
   return (
     // 1. Haupt-Container (Vertikale Flexbox für AppBar + Content)
     <>
+      <SaveDialog
+        open={showSaveDialog}
+        saveAction={(data) => {saveBom(bom, data.filename)}}
+        closeAction={() => {setShowSaveDialog(false)}}
+      />
       <Box sx={{display: "none"}}><input type="file" id="__loadFileBtn"/></Box>
       <Box
         sx={{ 

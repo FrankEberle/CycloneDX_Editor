@@ -25,7 +25,7 @@ export default function DrawerButton({options}) {
                   set.map(({label, action, icon}) => {
                       return (
                           <ListItem key={label} disablePadding>
-                              <ListItemButton onClick={() => optionClicked(action)}>
+                              <ListItemButton key={label} onClick={() => optionClicked(action)}>
                                   <ListItemIcon>{icon}</ListItemIcon>
                                   <ListItemText primary={label}/>
                               </ListItemButton>
@@ -55,10 +55,10 @@ export default function DrawerButton({options}) {
                     {
                       options.map((set, idx) => {
                           return (
-                              <>
+                              <div key={idx}>
                                   <OptionSet set={set}/>
-                                  { idx != (options.length - 1) ? <Divider/> : <></> }
-                              </>
+                                  { idx != (options.length - 1) ? <Divider/> : <></>  }
+                              </div>
                           );
                       })
                     }

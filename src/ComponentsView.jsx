@@ -10,7 +10,9 @@ import { useTreeViewApiRef} from '@mui/x-tree-view/hooks';
 
 import NewComponentDialog from './NewComponentDialog';
 import ComponentEdit from './ComponentEdit';
+import YesNoDialog from './YesNoDialog';
 import * as CycloneDX from './cyclonedx';
+import { Typography } from '@mui/material';
 
 function treeViewGetItemId(component) {
   return component["_id"];
@@ -40,7 +42,6 @@ function ComponentSpeedDial({addAction, deleteAction}) {
       icon={<SpeedDialIcon />}
       open={isOpen}
       onClick={() => {setIsOpen(!isOpen)}}
-      onClose={() => {setIsOpen(false)}}
     >
       <SpeedDialAction
           key={'add'}
@@ -56,6 +57,7 @@ function ComponentSpeedDial({addAction, deleteAction}) {
           }}
         />
       <SpeedDialAction
+          sx={{display: deleteAction === undefined ? 'none' : 'block'}}
           key={'delete'}
           icon=<DeleteIcon/>
           slotProps={{
@@ -71,13 +73,13 @@ function ComponentSpeedDial({addAction, deleteAction}) {
 
     </SpeedDial>
   );
-
 }
 
 export default function ComponentsView({show, bom}) {
   const [componentsList, setComponentsList] = React.useState(Array());
   const [component, setComponent] = React.useState(null);
   const [newCmpOpen, setNewCmpOpen] = React.useState(false);
+  const [confirmDelOpen, setConfirmDelOpen] = React.useState(false);
 
   const treeApiRef = useTreeViewApiRef();
 
@@ -85,6 +87,10 @@ export default function ComponentsView({show, bom}) {
     setComponentsList(bom.components);
     if (bom.components.length > 0) {
       setComponent(bom.components[0]);
+      treeApiRef.current.setItemSelection({
+        itemId: bom.components[0]._id,
+        shouldBeSelected: true,
+      });
     }
   }, [bom]);
 
@@ -96,19 +102,6 @@ export default function ComponentsView({show, bom}) {
 
   function refreshTree() {
     setComponentsList([...bom.components]);
-  }
-
-  function treeItemClicked(event, id) {
-    const c = CycloneDX.componentLookup(bom, id);
-    if (c !== undefined) {
-      setComponent(c);
-    } else {
-      console.log("Error: Component not found")
-    }
-  }
-
-  function newCmpDialogOpen() {
-    setNewCmpOpen(true);
   }
 
   function newCmpDialogSave(formData) {
@@ -127,11 +120,10 @@ export default function ComponentsView({show, bom}) {
     if (target["components"] === undefined) {
       target["components"] = new Array();
     }
-    let newCmp = {
-      _id: crypto.randomUUID(),
+    let newCmp = CycloneDX.prepareComponent({
       name: formData.get("name"),
       type: formData.get("type"),
-    }
+    });
     target.components.push(newCmp);
     console.log(target.components);
     setNewCmpOpen(false);
@@ -143,16 +135,46 @@ export default function ComponentsView({show, bom}) {
     })
   }
 
-  function newCmpDialogCancel() {
-    setNewCmpOpen(false);
+  function delComponent() {
+    CycloneDX.foreachComponent(bom, (comp, base, idx) => {
+      if (comp._id == component._id) {
+        base.components.splice(idx, 1);
+        return [false, undefined];
+      }
+      return [true, undefined];
+    });
+    refreshTree();
+    if (bom.components.length > 0) {
+      const selComp = bom.components[0];
+      treeApiRef.current.setItemSelection({
+        itemId: selComp._id,
+        shouldBeSelected: true,
+      });
+      setComponent(selComp);
+    } else {
+      setComponent(undefined);
+    }
+    setConfirmDelOpen(false);
   }
 
   return (
     <Box sx={{display: show ? 'flex' : 'none', flexDirection: 'row', flexGrow: 1, minHeight: 0, overflow: 'auto', visibility: 'visible'}}>
-      <NewComponentDialog open={newCmpOpen} askSub={component != null} okAction={newCmpDialogSave} cancelAction={newCmpDialogCancel}/>
+      <NewComponentDialog
+        open={newCmpOpen}
+        askSub={component != null}
+        okAction={newCmpDialogSave}
+        cancelAction={() => {setNewCmpOpen(false)}}
+      />
+      <YesNoDialog
+        open={confirmDelOpen}
+        title="Confirmation"
+        text="Are you sure to delete the component?"
+        yesAction={delComponent}
+        noAction={() => {setConfirmDelOpen(false)}}
+      />
       <ComponentSpeedDial
-        addAction={newCmpDialogOpen}
-
+        addAction={() => {setNewCmpOpen(true)}}
+        deleteAction={component === undefined ? undefined : () => {setConfirmDelOpen(true)}}
       />
       <Box 
         sx={{ 
@@ -170,7 +192,25 @@ export default function ComponentsView({show, bom}) {
           getItemLabel={treeViewGetItemLabel}
           getItemChildren={treeViewGetItemChildren}
           expansionTrigger='iconContainer'
-          onItemClick={treeItemClicked}
+          onItemFocus={(event, itemId) => {
+            // Set item as selected when it is focused, this allows
+            // to 'scroll' through the components by keyboard
+            treeApiRef.current.setItemSelection({
+              itemId: itemId,
+              shouldBeSelected: true,
+            });
+          }}
+          onItemSelectionToggle={(event, itemId, isSelected) => {
+            if (!isSelected) {
+              return;
+            }
+            const c = CycloneDX.componentLookup(bom, itemId);
+            if (c !== undefined) {
+              setComponent(c);
+            } else {
+              console.log("Error: Component not found")
+            }
+          }}
         />
       </Box>
       <Box
