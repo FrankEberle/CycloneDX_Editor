@@ -21,26 +21,56 @@ import Stack from '@mui/material/Stack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import Alert from '@mui/material/Alert';
+import Collapse from '@mui/material/Collapse';
 
 import * as CycloneDX from './cyclonedx';
 import YesNoDialog from './YesNoDialog';
+import Properties from './Properties';
+import { ReadOnly } from './helper';
 
 
-function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
-  const formId = id + "-property-edit-form";
+function LicenseEditDialog({license, saveAction, closeAction}) {
+  const [warnText, setWarnText] = React.useState("");
+
+  React.useEffect(() => {
+    setWarnText("");
+  }, [license]);
+  
 
   function formSubmit(event) {
+    console.log("debug1");
     event.preventDefault();
+    event.stopPropagation();
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    if (prop["_id"] !== undefined) {
-      data["_id"] = prop["_id"];
+    if (formData.get("name") != "" && formData.get("id") != "-") {
+      setWarnText("Name and ID are mutual exclusive.");
+      return;
+    }
+    if (formData.get("name") == "" && formData.get("id") == "-") {
+      setWarnText("Name or ID is requird.");
+      return;
+    }
+
+    const data = {
+      "_id": license["_id"],
+      "license": {
+        ...Object.fromEntries(formData.entries()),
+        "properties": license.license.properties
+      },
+    };
+    if (data.license.id == "-") {
+      delete data.license.id;
     }
     saveAction(data);
     closeAction();
   }
 
-  if (prop === undefined) {
+  function getLicValue(key, defaultValue) {
+    return license.license[key] === undefined ? defaultValue : license.license[key];
+  }
+
+  if (license === undefined) {
     return <></>
   }
 
@@ -51,25 +81,51 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
       fullWidth={true}
       disableRestoreFocus
     >
-    <DialogTitle>{prop["_id"] === undefined ? "New" : "Edit"} License</DialogTitle>
+    <DialogTitle>{license["_id"] === undefined ? "New" : "Edit"} License</DialogTitle>
     <DialogContent>
-      <form id={formId} onSubmit={formSubmit}>
+      <Collapse in={warnText != ""}>
+        <Alert severity="warning" variant='outlined'>{warnText}</Alert>
+      </Collapse>
+      <form id="license-form" onSubmit={formSubmit}>
         <Stack>
           <TextField
             label="Name"
             name="name"
             variant="standard"
+            size='small'
             sx={{mt: 2}}
-            required
             autoFocus
-            defaultValue={prop.name}
+            defaultValue={getLicValue("name", "")}
           />
           <TextField
-            label="Value"
-            name="value"
+              select
+              label="ID"
+              name="id"
+              sx={{mt: 2}}
+              slotProps={{
+                  select: {
+                      native: true,
+                  },
+              }}
+              defaultValue={getLicValue("id", "")}
+          >
+            <option key="-" value="-">Not selected</option>
+              { CycloneDX.getSpdxIDs().map((v) => (
+                  <option key={v} value={v}>{v}</option>
+              ))}
+          </TextField>
+          <TextField
+            label="URL"
+            name="url"
             variant="standard"
-            sx={{mt: 2}}
-            defaultValue={prop.value}
+            sx={{mt: 2, mb: 2}}
+            size='small'
+            defaultValue={getLicValue("url", "")}
+          />
+          <Properties
+            form_id="license"
+            properties={getLicValue("properties", Array())}
+            
           />
         </Stack>
       </form>
@@ -77,7 +133,7 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
      <DialogActions>
           <Button
             type="submit"
-            form={formId}
+            form="license-form"
           >
             Save
           </Button>
@@ -91,8 +147,7 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
   )
 }
 
-
-export default function Licenses({licenses, changeValue}) {
+export default function Licenses({licenses, readOnly}) {
   const [licensesList, setLicensesList] = React.useState([]);
   const [editLic, setEditLic] = React.useState(undefined);
   const [delLic, setDelLic] = React.useState(undefined);
@@ -107,15 +162,15 @@ export default function Licenses({licenses, changeValue}) {
 
   function save(data) {
     if (data["_id"] === undefined) {
-      properties.push(CycloneDX.prepareProperty(data));
+      licenses.push(CycloneDX.prepareLicense(data));
     } else {
-      for (let i = 0; i < properties.length; ++i) {
-        if (properties[i]._id == data._id) {
-          properties[i] = data;
+      for (let i = 0; i < licenses.length; ++i) {
+        if (licenses[i]["_id"] == data["_id"]) {
+          licenses[i] = data;
         }
       }
     }
-    setProps([...properties]);
+    setLicensesList([...licenses]);
   }
 
   function delLicense() {
@@ -127,7 +182,6 @@ export default function Licenses({licenses, changeValue}) {
     }
     setDelLic(undefined);
     setLicensesList([...licenses]);
-    changeValue("licenses", licenses);
   }
 
   return (
@@ -139,22 +193,24 @@ export default function Licenses({licenses, changeValue}) {
         yesAction={() => {delLicense()}}
         noAction={() => {setDelLic(undefined)}}
       />
-      <PropertiesEditDialog
+      <LicenseEditDialog
         id="license"
-        prop={editLic}
+        license={editLic}
         saveAction={save}
         closeAction={closeDialog}
       />
       <TableContainer component={Paper}>
-        <Table size='small'>
+        <Table size='small' sx={{tableLayout: 'fixed'}}>
           <TableHead>
             <TableRow>
               <TableCell sx={{fontWeight: 'bolder'}} colSpan={3}>Licenses</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell sx={{fontWeight: 'bolder'}}>ID / Name</TableCell>
+              <TableCell sx={{fontWeight: 'bolder', maxWidth: 200}}>ID / Name</TableCell>
               <TableCell sx={{fontWeight: 'bolder'}}>URL</TableCell>
-              <TableCell align='right'><IconButton aria-label="Add" onClick={() => {setEditLic({name: "", value: ""})}}><AddIcon/></IconButton></TableCell>
+              <ReadOnly readOnly={readOnly}>
+                <TableCell align='right'><IconButton aria-label="Add" onClick={() => {setEditLic({license: {properties: []}})}}><AddIcon/></IconButton></TableCell>
+              </ReadOnly>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -166,10 +222,12 @@ export default function Licenses({licenses, changeValue}) {
               <TableRow key={l._id}>
                 <TableCell>{l.license["id"] !== undefined ? "ID: " + l.license.id : "Name: " + l.license.name}</TableCell>
                 <TableCell>{l.license["url"] !== undefined ? l.license.url : ""}</TableCell>
-                <TableCell align='right'>
-                  <IconButton aria-label="Edit" onClick={() => {setEditLic(l)}}><EditIcon/></IconButton>
-                  <IconButton aria-label="Delete" onClick={() => {setDelLic(l._id)}}><DeleteIcon/></IconButton>
-                </TableCell>
+                <ReadOnly readOnly={readOnly}>
+                  <TableCell align='right'>
+                    <IconButton aria-label="Edit" onClick={() => {setEditLic(l)}}><EditIcon/></IconButton>
+                    <IconButton aria-label="Delete" onClick={() => {setDelLic(l._id)}}><DeleteIcon/></IconButton>
+                  </TableCell>
+                </ReadOnly>
               </TableRow>
             );
           })}

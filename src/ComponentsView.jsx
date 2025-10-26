@@ -4,11 +4,13 @@ import SpeedDial from '@mui/material/SpeedDial';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddBoxIcon from '@mui/icons-material/AddBox';
+import EditIcon from '@mui/icons-material/Edit';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { useTreeViewApiRef} from '@mui/x-tree-view/hooks';
 
 import NewComponentDialog from './NewComponentDialog';
+import ComponentEditDialog from './ComponentEditDialog';
 import ComponentEdit from './ComponentEdit';
 import YesNoDialog from './YesNoDialog';
 import * as CycloneDX from './cyclonedx';
@@ -19,7 +21,7 @@ function treeViewGetItemId(component) {
 }
 
 function treeViewGetItemLabel(component) {
-  if (component["version"] !== undefined) {
+  if ((component["version"] !== undefined) && (component["version"] != "")) {
     return `${component.name} (${component.version})`;
   }
   return component.name;
@@ -33,7 +35,7 @@ function treeViewGetItemChildren(component) {
 }
 
 
-function ComponentSpeedDial({addAction, deleteAction}) {
+function ComponentSpeedDial({addAction, editAction, deleteAction}) {
   const [isOpen, setIsOpen] = React.useState(false);
   return (
     <SpeedDial
@@ -44,18 +46,32 @@ function ComponentSpeedDial({addAction, deleteAction}) {
       onClick={() => {setIsOpen(!isOpen)}}
     >
       <SpeedDialAction
-          key={'add'}
-          icon=<AddBoxIcon/>
-          slotProps={{
-            tooltip: {
-              title: 'Add Component',
-            },
-          }}
-          onClick={() => {
-            setIsOpen(false);
-            addAction();
-          }}
-        />
+        key={'add'}
+        icon=<AddBoxIcon/>
+        slotProps={{
+          tooltip: {
+            title: 'Add Component',
+          },
+        }}
+        onClick={() => {
+          setIsOpen(false);
+          addAction();
+        }}
+      />
+      <SpeedDialAction
+      sx={{display: editAction === undefined ? 'none' : 'block'}}
+        key={'edit'}
+        icon=<EditIcon/>
+        slotProps={{
+          tooltip: {
+            title: 'Edit Component',
+          },
+        }}
+        onClick={() => {
+          setIsOpen(false);
+          editAction();
+        }}
+      />
       <SpeedDialAction
           sx={{display: deleteAction === undefined ? 'none' : 'block'}}
           key={'delete'}
@@ -78,6 +94,7 @@ function ComponentSpeedDial({addAction, deleteAction}) {
 export default function ComponentsView({show, bom}) {
   const [componentsList, setComponentsList] = React.useState(Array());
   const [component, setComponent] = React.useState(null);
+  const [editComponent, setEditComponent] = React.useState(undefined);
   const [newCmpOpen, setNewCmpOpen] = React.useState(false);
   const [confirmDelOpen, setConfirmDelOpen] = React.useState(false);
 
@@ -94,13 +111,8 @@ export default function ComponentsView({show, bom}) {
     }
   }, [bom]);
 
-  function componentChangeValue(key, value) {
-    bom._modified = true;
-    component[key] = value;
-    console.log(bom);
-  }
-
   function refreshTree() {
+    console.log("refresh tree");
     setComponentsList([...bom.components]);
   }
 
@@ -157,6 +169,32 @@ export default function ComponentsView({show, bom}) {
     setConfirmDelOpen(false);
   }
 
+  function storeComponent() {
+    if (editComponent["_id"] === undefined) {
+      bom["components"].push(CycloneDX.prepareComponent(editComponent));
+      refreshTree();
+    } else {
+      let refreshRequired = false;
+      CycloneDX.foreachComponent(bom, (c, a, idx) => {
+        if (c["_id"] == editComponent["_id"]) {
+          console.log(editComponent);
+          ["name", "version", "type"].forEach((field) => {
+            if (c[field] != editComponent[field]) {
+              refreshRequired = true;
+            }
+          });
+          a.components[idx] = editComponent;
+          setComponent(a.components[idx]);
+          return [false, undefined];
+        } else {
+          return [true, undefined];
+        }
+      });
+      if (refreshRequired) refreshTree();
+    }
+    setEditComponent(undefined);
+  }
+
   return (
     <Box sx={{display: show ? 'flex' : 'none', flexDirection: 'row', flexGrow: 1, minHeight: 0, overflow: 'auto', visibility: 'visible'}}>
       <NewComponentDialog
@@ -172,8 +210,16 @@ export default function ComponentsView({show, bom}) {
         yesAction={delComponent}
         noAction={() => {setConfirmDelOpen(false)}}
       />
+      <ComponentEditDialog
+        component={editComponent}
+        saveAction={storeComponent}
+        closeAction={() => setEditComponent(undefined)}
+      />
       <ComponentSpeedDial
         addAction={() => {setNewCmpOpen(true)}}
+        editAction={component === undefined ? undefined : () => {
+          setEditComponent(CycloneDX.deepCopy(component));
+        }}
         deleteAction={component === undefined ? undefined : () => {setConfirmDelOpen(true)}}
       />
       <Box 
@@ -223,8 +269,7 @@ export default function ComponentsView({show, bom}) {
       >
         <ComponentEdit
           component={component}
-          changeValue={componentChangeValue}
-          focusLoss={refreshTree}
+          readOnly={true}
         />  
       </Box>
     </Box>

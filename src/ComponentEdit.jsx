@@ -7,10 +7,10 @@ import * as CycloneDX from './cyclonedx';
 import Properties from './Properties';
 import Licenses from './Licenses';
 
-export default function ComponentEdit({component, changeValue, focusLoss}) {
+export default function ComponentEdit({component, saveAction, readOnly}) {
     const typeValues = CycloneDX.getComponentTypes();
-    const formRef = React.useRef(null);
 
+/*
     function CmpTextField({label, field, value, required}) {
         const [error, setError] = React.useState(false)
         const [helperText, setHelperText] = React.useState("")
@@ -42,21 +42,59 @@ export default function ComponentEdit({component, changeValue, focusLoss}) {
         );
     }
 
-    function CmpDropdownField({label, field, value, options}) {
+*/
+
+    if (readOnly === undefined) readOnly = false;
+    console.log(readOnly);
+
+
+    function CmpTextField({label, name, required}) {
         return (
             <TextField
-                id={"component_field_" + field}
+                size='small'
+                label={label}
+                name={name}
+                required={required}
+                defaultValue={component[name] !== undefined ? component[name] : ""}
+                slotProps={{
+                    input: {
+                        readOnly: readOnly,
+                    },
+                 }}
+            />
+        );
+    }
+
+    function CmpDropdownField({label, name, options}) {
+        if (readOnly) {
+            return (
+                <TextField
+                    size='small'
+                    label={label}
+                    name={name}
+                    defaultValue={component[name] !== undefined ? component[name] : ""}
+                    slotProps={{
+                        input: {
+                            readOnly: readOnly,
+                        },
+                    }}
+                />
+            );
+        }
+
+        return (
+            <TextField
                 select
                 label={label}
+                name={name}
+                required={true}
+                disabled={readOnly}
                 slotProps={{
                     select: {
                         native: true,
                     },
                 }}
-                defaultValue={value}
-                onBlur={(e) => {
-                    changeValue(field, e.target.value);
-                }}
+                defaultValue={component[name] !== undefined ? component[name] : ""}
             >
                 { options.map((v) => (
                     <option key={v} value={v}>{v}</option>
@@ -65,30 +103,24 @@ export default function ComponentEdit({component, changeValue, focusLoss}) {
         );
     }
 
-    function formOnBlur(e) {
-        // Check if the next focused element is outside of the form
-        if (formRef.current && !formRef.current.contains(e.relatedTarget)) {
-            focusLoss();
-        }
-    }
-
     if (component == null) {
         return <></>
     }
+
 
     return (
         <FormControl
             size='small'
             fullWidth
         >
-            <Stack spacing={2} component="form" ref={formRef} onBlur={formOnBlur}>
-                <CmpTextField label='Name' required={true} field='name' value={component.name}/>
-                <CmpDropdownField label='Type' field='type' value={component.type} options={typeValues}/>
-                <CmpTextField label='Version' field='version' value={component["version"]}/>
-                <CmpTextField label='PURL' field='purl' value={component["purl"]}/>
-                <CmpTextField label='CPE' field='cpe' value={component["cpe"]}/>
-                <Licenses licenses={component.licenses} changeValue={changeValue}/>
-                <Properties properties={component.properties} changeValue={changeValue}/>
+            <Stack spacing={2}>
+                <CmpTextField label='Name' name='name' required={true} />
+                <CmpDropdownField label='Type' name='type' options={typeValues}/>
+                <CmpTextField label='Version' name='version'/>
+                <CmpTextField label='PURL' name='purl'/>
+                <CmpTextField label='CPE' name='cpe'/>
+                <Licenses licenses={component.licenses} readOnly={readOnly}/>
+                <Properties form_id="component" properties={component.properties} readOnly={readOnly}/>
             </Stack>
         </FormControl>
     );

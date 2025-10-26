@@ -21,16 +21,20 @@ import Stack from '@mui/material/Stack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
+import Portal from '@mui/material/Portal';
 
 import * as CycloneDX from './cyclonedx';
 import YesNoDialog from './YesNoDialog';
+import { ReadOnly } from './helper';
 
 
 function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
   const formId = id + "-property-edit-form";
 
   function formSubmit(event) {
+    console.log("hallo");
     event.preventDefault();
+    event.stopPropagation();
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
     if (prop["_id"] !== undefined) {
@@ -45,6 +49,7 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
   }
 
   return (
+    <Portal>
     <Dialog
       open={true}
       maxWidth="lg"
@@ -88,11 +93,12 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
           </Button>
         </DialogActions>
     </Dialog>
+    </Portal>
   )
 }
 
 
-export default function Properties({properties, changeValue}) {
+export default function Properties({form_id, properties, readOnly}) {
   const [props, setProps] = React.useState([]);
   const [editProp, setEditProp] = React.useState(undefined);
   const [delProp, setDelProp] = React.useState(undefined);
@@ -116,7 +122,6 @@ export default function Properties({properties, changeValue}) {
       }
     }
     setProps([...properties]);
-    changeValue("properties", properties); // to set modified flag
   }
 
   function delProperty() {
@@ -128,7 +133,6 @@ export default function Properties({properties, changeValue}) {
     }
     setDelProp(undefined);
     setProps([...properties]);
-    changeValue("properties", properties); // to set modified flag
   }
 
   function confirmDelProperty(id) {
@@ -145,21 +149,23 @@ export default function Properties({properties, changeValue}) {
         noAction={() => {setDelProp(undefined)}}
       />
       <PropertiesEditDialog
-        id="component"
+        id={form_id}
         prop={editProp}
         saveAction={save}
         closeAction={closeDialog}
       />
       <TableContainer component={Paper}>
-        <Table size='small'>
+        <Table size='small' sx={{tableLayout: 'fixed'}}>
           <TableHead>
             <TableRow>
               <TableCell sx={{fontWeight: 'bolder'}} colSpan={3}>Properties</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell sx={{fontWeight: 'bolder'}}>Name</TableCell>
+              <TableCell sx={{fontWeight: 'bolder', maxWidth: 200}}>Name</TableCell>
               <TableCell sx={{fontWeight: 'bolder'}}>Value</TableCell>
-              <TableCell align='right'><IconButton aria-label="Add" onClick={() => {setEditProp({name: "", value: ""})}}><AddIcon/></IconButton></TableCell>
+              <ReadOnly readOnly={readOnly}>
+                <TableCell align='right'><IconButton aria-label="Add" onClick={() => {setEditProp({name: "", value: ""})}}><AddIcon/></IconButton></TableCell>
+              </ReadOnly>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -168,10 +174,12 @@ export default function Properties({properties, changeValue}) {
               <TableRow key={p._id}>
                 <TableCell>{p.name}</TableCell>
                 <TableCell>{p.value}</TableCell>
-                <TableCell align='right'>
-                  <IconButton aria-label="Edit" onClick={() => {setEditProp(p)}}><EditIcon/></IconButton>
-                  <IconButton aria-label="Delete" onClick={() => {confirmDelProperty(p._id)}}><DeleteIcon/></IconButton>
-                </TableCell>
+                <ReadOnly readOnly={readOnly}>
+                  <TableCell align='right'>
+                    <IconButton aria-label="Edit" onClick={() => {setEditProp(p)}}><EditIcon/></IconButton>
+                    <IconButton aria-label="Delete" onClick={() => {confirmDelProperty(p._id)}}><DeleteIcon/></IconButton>
+                  </TableCell>
+                </ReadOnly>
               </TableRow>
             );
           })}

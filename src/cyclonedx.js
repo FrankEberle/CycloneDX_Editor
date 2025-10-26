@@ -1,3 +1,5 @@
+import spdx_schema from './assets/spdx.schema.json';
+
 function getComponentTypes(version) {
     if (version === undefined || version == "1.6") {
         return [
@@ -17,6 +19,10 @@ function getComponentTypes(version) {
     } else {
         throw Error("Unecpected CycloneDX version");
     }
+}
+
+function getSpdxIDs() {
+  return spdx_schema.enum;
 }
 
 function foreachComponent(bom, func) {
@@ -67,11 +73,17 @@ function prepareLicense(l) {
   if (l["_id"] === undefined) {
     l["_id"] = crypto.randomUUID();
   }
+  if (l["license"] !== undefined) {
+    setIfUndefined(l.license, "properties", Array());
+    l.license.properties.forEach((p) => {prepareProperty(p)})
+  }
   return l;
 }
 
-function prepareComponent(c) {
-    c["_id"] = crypto.randomUUID();
+function prepareComponent(c, noID) {
+    if (noID !== true) {
+      c["_id"] = crypto.randomUUID();
+    }
     setIfUndefined(c, "properties", Array());
     c.properties.forEach((p) => {prepareProperty(p)})
     setIfUndefined(c, "licenses", Array());
@@ -99,12 +111,24 @@ function removeEmptyFields(o) {
   }
 }
 
+function removeIdFromArrayElements(aArray) {
+  if (aArray !== undefined) {
+    aArray.forEach((e) => {delete e._id});
+  }
+}
+
 function cleanBom(bom) {
   delete bom._modified;
   foreachComponent(bom, (c) => {
     delete c._id;
-    c.properties.forEach((p) => {delete p._id});
-    c.licensed.forEach((l) => {delete l._id});
+    removeIdFromArrayElements(c.properties);
+    c.licenses.forEach((l) => {
+      delete l._id;
+      if (l["license"] !== undefined) {
+        removeIdFromArrayElements(l.license["properties"]);
+        removeEmptyFields(l.license)
+      }
+    });
     removeEmptyFields(c);
     return [true, undefined];
   });
@@ -150,7 +174,7 @@ function emptyBom() {
           },
           {
             "license": {
-              "id": "bar",
+              "id": "FreeImage",
               "url": "https://www.frank-eberle.de/license"
             }
           }
@@ -162,6 +186,10 @@ function emptyBom() {
   return bom;
 }
 
+function deepCopy(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
 
 
-export {getComponentTypes, componentLookup, foreachComponent, prepareBom, prepareComponent, emptyBom, prepareProperty, cleanBom};
+
+export {getComponentTypes, componentLookup, foreachComponent, prepareBom, prepareComponent, emptyBom, prepareProperty, prepareLicense, cleanBom, deepCopy, getSpdxIDs};

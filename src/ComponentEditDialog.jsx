@@ -13,15 +13,33 @@ import Box from '@mui/material/Box';
 import ComponentEdit from './ComponentEdit';
 
 
-export default function ComponentEditDialog({isOpen, close, component}) {
+export default function ComponentEditDialog({component, saveAction, closeAction}) {
+  if (component === undefined) {
+    return <></>;
+  }
+
+  function onSubmit(event) {
+    console.log("component edit submit");
+  
+    event.preventDefault();
+    event.stopPropagation();
+    const formData = new FormData(event.currentTarget);
+    formData.entries().forEach(([key, value]) => {
+        component[key] = value;
+    });
+    console.log(component);
+    saveAction();
+  }
+
+
   return (
-    <Dialog open={isOpen} fullScreen={true} maxWidth="1200">
+    <Dialog open={true} fullScreen={true} maxWidth="1200">
       <AppBar sx={{ position: 'relative' }}>
           <Toolbar>
             <IconButton
               edge="start"
               color="inherit"
-              onClick={close}
+              onClick={closeAction}
               aria-label="close"
             >
               <CloseIcon />
@@ -29,15 +47,17 @@ export default function ComponentEditDialog({isOpen, close, component}) {
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
               {component["_id"] === undefined ? "New Component" : "Edit Component"}
             </Typography>
-            <Button autoFocus color="inherit" onClick={close}>
+            <Button autoFocus color="inherit" type='submit' form='component-edit-form'>
               save
             </Button>
           </Toolbar>
         </AppBar>
         <DialogContent>
-          <ComponentEdit
-            component={component}
-          />
+          <form id="component-edit-form" onSubmit={onSubmit}>
+            <ComponentEdit
+              component={component}
+            />
+          </form>
         </DialogContent>
     </Dialog>
   );
