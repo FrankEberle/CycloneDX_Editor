@@ -1,32 +1,17 @@
 import React from 'react';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
-
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import AddIcon from '@mui/icons-material/Add';
 import Alert from '@mui/material/Alert';
 import Collapse from '@mui/material/Collapse';
 
 import * as CycloneDX from './cyclonedx';
-import YesNoDialog from './YesNoDialog';
 import Properties from './Properties';
-import { ReadOnly, Conditional } from './helper';
+import EditTable from './EditTable';
 
 
 function LicenseEditDialog({license, saveAction, closeAction}) {
@@ -150,7 +135,6 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
 export default function Licenses({licenses, readOnly}) {
   const [licensesList, setLicensesList] = React.useState([]);
   const [editLic, setEditLic] = React.useState(undefined);
-  const [delLic, setDelLic] = React.useState(undefined);
 
   React.useEffect(() => {
     setLicensesList(licenses);
@@ -169,74 +153,43 @@ export default function Licenses({licenses, readOnly}) {
     setLicensesList([...licenses]);
   }
 
-  function delLicense() {
-    for (let i = 0; i < licenses.length; ++i) {
-      if (licenses[i]["_id"] == delLic) {
-        licenses.splice(i, 1);
-        break;
-      }
-    }
-    setDelLic(undefined);
-    setLicensesList([...licenses]);
-  }
-
   return (
-    <Box>
-      <YesNoDialog 
-        open={delLic !== undefined}
-        title="Confirmation"
-        text="Are you sure to delete the license?"
-        yesAction={() => {delLicense()}}
-        noAction={() => {setDelLic(undefined)}}
-      />
+    <>
       <LicenseEditDialog
         id="license"
         license={editLic}
         saveAction={save}
         closeAction={closeDialog}
       />
-      <TableContainer sx={{mt: 3}}>
-        <Table size='small' sx={{tableLayout: 'fixed'}}>
-          <TableHead>
-            <TableRow sx={{borderBottomStyle: 'double', borderBottomColor: 'divider'}}>
-              <TableCell colSpan={readOnly ? 2 : 3}>Licenses</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell sx={{fontStyle: 'italic', maxWidth: 200}}>ID / Name</TableCell>
-              <TableCell sx={{fontStyle: 'italic'}}>URL</TableCell>
-              <ReadOnly readOnly={readOnly}>
-                <TableCell align='right'><IconButton aria-label="Add" onClick={() => {setEditLic({license: {properties: []}})}}><AddIcon/></IconButton></TableCell>
-              </ReadOnly>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            <Conditional show={licensesList.length > 0}>
-            { licensesList.map((l) => {
-              if (l["license"] === undefined) {
-                return <></>
-              }
-              return (
-                <TableRow key={l._id} hover>
-                  <TableCell>{l.license["id"] !== undefined ? "ID: " + l.license.id : "Name: " + l.license.name}</TableCell>
-                  <TableCell>{l.license["url"] !== undefined ? l.license.url : ""}</TableCell>
-                  <ReadOnly readOnly={readOnly}>
-                    <TableCell align='right'>
-                      <IconButton aria-label="Edit" onClick={() => {setEditLic(l)}}><EditIcon/></IconButton>
-                      <IconButton aria-label="Delete" onClick={() => {setDelLic(l._id)}}><DeleteIcon/></IconButton>
-                    </TableCell>
-                  </ReadOnly>
-                </TableRow>
-            );
-            })}
-          </Conditional>
-          <Conditional show={licensesList.length == 0}>
-            <TableRow>
-              <TableCell colSpan={readOnly ? 2 : 3}>No licenses defined</TableCell>
-            </TableRow>
-          </Conditional>
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </Box>
+      <EditTable
+        title={['License', 'Licenses']}
+        readOnly={readOnly}
+        colSpec={
+          [
+            {
+              label: "ID / Name",
+              getter: (license) => {
+                if (license.license["name"] !== undefined && license.license.name != "")
+                  return license.license.name;
+                else
+                  return license.license.id
+              },
+              maxWidth: 200
+            },
+            {
+              label: "URL",
+              getter: (license) => {return license.license["url"]},
+            },
+          ]
+        }
+        items={licensesList}
+        deleteAction={(idx) => {
+          licenses.splice(idx, 1);
+          setLicensesList([...licenses]);
+        }}
+        addAction={() => {setEditLic({license: {}})}}
+        editAction={(license) => {setEditLic(license)}}
+      />    
+    </>
   );
 }
