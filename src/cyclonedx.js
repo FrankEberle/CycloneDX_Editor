@@ -1,25 +1,95 @@
 import spdx_schema from './assets/spdx.schema.json';
 
 function getComponentTypes(version) {
-    if (version === undefined || version == "1.6") {
-        return [
-            "application",
-            "framework",
-            "library",
-            "container",
-            "platform",
-            "operating-system",
-            "device",
-            "device-driver",
-            "firmware",
-            "machine-learning-model",
-            "data",
-            "cryptographic-asset",
-        ];
-    } else {
-        throw Error("Unecpected CycloneDX version");
-    }
+  if (version === undefined || version == "1.6") {
+      return [
+          "application",
+          "framework",
+          "library",
+          "container",
+          "platform",
+          "operating-system",
+          "device",
+          "device-driver",
+          "firmware",
+          "machine-learning-model",
+          "data",
+          "cryptographic-asset",
+      ];
+  } else {
+      throw Error("Unecpected CycloneDX version");
+  }
 }
+
+function getExtRefTypes(version) {
+  if (version === undefined || version == "1.6") {
+    return [
+      "vcs",
+      "issue-tracker",
+      "website",
+      "advisories",
+      "bom",
+      "mailing-list",
+      "social",
+      "chat",
+      "documentation",
+      "support",
+      "source-distribution",
+      "distribution",
+      "distribution-intake",
+      "license",
+      "build-meta",
+      "build-system",
+      "release-notes",
+      "security-contact",
+      "model-card",
+      "log",
+      "configuration",
+      "evidence",
+      "formulation",
+      "attestation",
+      "threat-model",
+      "adversary-model",
+      "risk-assessment",
+      "vulnerability-assertion",
+      "exploitability-statement",
+      "pentest-report",
+      "static-analysis-report",
+      "dynamic-analysis-report",
+      "runtime-analysis-report",
+      "component-analysis-report",
+      "maturity-report",
+      "certification-report",
+      "codified-infrastructure",
+      "quality-metrics",
+      "poam",
+      "electronic-signature",
+      "digital-signature",
+      "rfc-9116",
+      "other",
+    ].sort();
+  }
+}
+
+function getHashAlgo(version) {
+  if (version === undefined || version == "1.6") {
+    return [
+      "MD5",
+      "SHA-1",
+      "SHA-256",
+      "SHA-384",
+      "SHA-512",
+      "SHA3-256",
+      "SHA3-384",
+      "SHA3-512",
+      "BLAKE2b-256",
+      "BLAKE2b-384",
+      "BLAKE2b-512",
+      "BLAKE3"
+    ];
+  }
+}
+
 
 function getSpdxIDs() {
   return spdx_schema.enum;
@@ -56,6 +126,13 @@ function componentLookup(bom, id) {
   return res;
 }
 
+function setIdIfUndefined(obj) {
+  if (obj["_id"] === undefined) {
+    obj["_id"] = crypto.randomUUID();
+  }
+  return obj;
+}
+
 function setIfUndefined(obj, key, value) {
   if (obj[key] === undefined) {
     obj[key] = value;
@@ -63,21 +140,29 @@ function setIfUndefined(obj, key, value) {
 }
 
 function prepareProperty(p) {
-  if (p["_id"] === undefined) {
-    p["_id"] = crypto.randomUUID();
-  }
+  setIdIfUndefined(p);
   return p;
 }
 
 function prepareLicense(l) {
-  if (l["_id"] === undefined) {
-    l["_id"] = crypto.randomUUID();
-  }
+  setIdIfUndefined(l);
   if (l["license"] !== undefined) {
     setIfUndefined(l.license, "properties", Array());
     l.license.properties.forEach((p) => {prepareProperty(p)})
   }
   return l;
+}
+
+function prepareExtRef(r) {
+  setIdIfUndefined(r);
+  setIfUndefined(r, "hashes", Array());
+  r.hashes.forEach((h) => {prepareHash(h)});
+  return r;
+}
+
+function prepareHash(r) {
+  setIdIfUndefined(r);
+  return r;
 }
 
 function prepareComponent(c, noID) {
@@ -88,6 +173,10 @@ function prepareComponent(c, noID) {
     c.properties.forEach((p) => {prepareProperty(p)})
     setIfUndefined(c, "licenses", Array());
     c.licenses.forEach((l) => {prepareLicense(l)})
+    setIfUndefined(c, "externalReferences", Array());
+    c.externalReferences.forEach((r) => {prepareExtRef(r)})
+    setIfUndefined(c, "hashes", Array());
+    c.hashes.forEach((h) => {prepareHash(h)});
     return c;
 }
 
@@ -129,11 +218,30 @@ function cleanBom(bom) {
         removeEmptyFields(l.license)
       }
     });
+    c.externalReferences.forEach((r) => {
+      delete r._id;
+      removeIdFromArrayElements(r.hashes);
+      removeEmptyFields(r);
+    });
+    removeIdFromArrayElements(c.hashes);
     removeEmptyFields(c);
     return [true, undefined];
   });
   removeEmptyFields(bom);
   return bom;
+}
+
+function deepCopy(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
+function replaceArrayElem(array, newElem) {
+  for (let i = 0; i < array.length; ++i) {
+    if (array[i]._id == newElem._id) {
+      array[i] = newElem;
+      break;
+    }
+  }
 }
 
 function emptyBom() {
@@ -175,8 +283,21 @@ function emptyBom() {
           {
             "license": {
               "id": "FreeImage",
-              "url": "https://www.frank-eberle.de/license"
+              "url": "https://www.frank-eberle.de/license",
+              "acknowledgement": "declared",
             }
+          }
+        ],
+        externalReferences: [
+          {
+            type: "vcs",
+            url: "https://www.frank-eberle.de/vsc",
+            hashes: [
+              {
+                alg: "MD5",
+                content: "aMD5hash",
+              }
+            ]
           }
         ]
       }
@@ -186,10 +307,21 @@ function emptyBom() {
   return bom;
 }
 
-function deepCopy(obj) {
-  return JSON.parse(JSON.stringify(obj));
-}
-
-
-
-export {getComponentTypes, componentLookup, foreachComponent, prepareBom, prepareComponent, emptyBom, prepareProperty, prepareLicense, cleanBom, deepCopy, getSpdxIDs};
+export {
+  getComponentTypes,
+  componentLookup,
+  foreachComponent,
+  prepareBom,
+  prepareComponent,
+  emptyBom,
+  prepareProperty,
+  prepareLicense,
+  cleanBom,
+  deepCopy,
+  getSpdxIDs,
+  prepareExtRef,
+  getExtRefTypes,
+  prepareHash,
+  getHashAlgo,
+  replaceArrayElem,
+};

@@ -6,8 +6,10 @@ import Stack from '@mui/material/Stack';
 import * as CycloneDX from './cyclonedx';
 import Properties from './Properties';
 import Licenses from './Licenses';
+import ExternalReferences from './ExternalReferences';
+import Hashes from './Hashes';
 
-export default function ComponentEdit({component, saveAction, readOnly}) {
+export default function ComponentEdit({component, readOnly}) {
     const typeValues = CycloneDX.getComponentTypes();
 
 /*
@@ -120,6 +122,8 @@ export default function ComponentEdit({component, saveAction, readOnly}) {
                 <CmpTextField label='PURL' name='purl'/>
                 <CmpTextField label='CPE' name='cpe'/>
                 <Licenses licenses={component.licenses} readOnly={readOnly}/>
+                <ExternalReferences references={component.externalReferences} readOnly={readOnly}/>
+                <Hashes hashes={component.hashes} readOnly={readOnly}/>
                 <Properties form_id="component" properties={component.properties} readOnly={readOnly}/>
             </Stack>
         </FormControl>

@@ -21,18 +21,17 @@ import Stack from '@mui/material/Stack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import AddIcon from '@mui/icons-material/Add';
-import Portal from '@mui/material/Portal';
+import Collapse from '@mui/material/Collapse';
 
 import * as CycloneDX from './cyclonedx';
 import YesNoDialog from './YesNoDialog';
-import { ReadOnly } from './helper';
+import { ReadOnly, Conditional } from './helper';
 
 
 function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
   const formId = id + "-property-edit-form";
 
   function formSubmit(event) {
-    console.log("hallo");
     event.preventDefault();
     event.stopPropagation();
     const formData = new FormData(event.currentTarget);
@@ -49,7 +48,6 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
   }
 
   return (
-    <Portal>
     <Dialog
       open={true}
       maxWidth="lg"
@@ -93,7 +91,7 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
           </Button>
         </DialogActions>
     </Dialog>
-    </Portal>
+
   )
 }
 
@@ -154,35 +152,42 @@ export default function Properties({form_id, properties, readOnly}) {
         saveAction={save}
         closeAction={closeDialog}
       />
-      <TableContainer component={Paper}>
+      <TableContainer sx={{mt: 3}}>
         <Table size='small' sx={{tableLayout: 'fixed'}}>
           <TableHead>
-            <TableRow>
-              <TableCell sx={{fontWeight: 'bolder'}} colSpan={3}>Properties</TableCell>
+            <TableRow sx={{borderBottomStyle: 'double', borderBottomColor: 'divider'}}>
+              <TableCell colSpan={readOnly ? 2 : 3}>Properties</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell sx={{fontWeight: 'bolder', maxWidth: 200}}>Name</TableCell>
-              <TableCell sx={{fontWeight: 'bolder'}}>Value</TableCell>
+              <TableCell sx={{fontStyle: 'italic', maxWidth: 200}}>Name</TableCell>
+              <TableCell sx={{fontStyle: 'italic'}}>Value</TableCell>
               <ReadOnly readOnly={readOnly}>
-                <TableCell align='right'><IconButton aria-label="Add" onClick={() => {setEditProp({name: "", value: ""})}}><AddIcon/></IconButton></TableCell>
+                <TableCell align='right'><IconButton size='small' aria-label="Add" onClick={() => {setEditProp({name: "", value: ""})}}><AddIcon/></IconButton></TableCell>
               </ReadOnly>
             </TableRow>
           </TableHead>
           <TableBody>
-          { props.map((p) => {
-            return (
-              <TableRow key={p._id}>
-                <TableCell>{p.name}</TableCell>
-                <TableCell>{p.value}</TableCell>
-                <ReadOnly readOnly={readOnly}>
-                  <TableCell align='right'>
-                    <IconButton aria-label="Edit" onClick={() => {setEditProp(p)}}><EditIcon/></IconButton>
-                    <IconButton aria-label="Delete" onClick={() => {confirmDelProperty(p._id)}}><DeleteIcon/></IconButton>
-                  </TableCell>
-                </ReadOnly>
+            <Conditional show={props.length > 0}>
+              { props.map((p) => {
+                return (
+                  <TableRow key={p._id} hover>
+                    <TableCell>{p.name}</TableCell>
+                    <TableCell>{p.value}</TableCell>
+                    <ReadOnly readOnly={readOnly}>
+                      <TableCell align='right'>
+                        <IconButton size='small' aria-label="Edit" onClick={() => {setEditProp(p)}}><EditIcon/></IconButton>
+                        <IconButton size='small' aria-label="Delete" onClick={() => {confirmDelProperty(p._id)}}><DeleteIcon/></IconButton>
+                      </TableCell>
+                    </ReadOnly>
+                  </TableRow>
+                );
+              })}
+            </Conditional>
+            <Conditional show={props.length == 0}>
+              <TableRow>
+                <TableCell colSpan={readOnly ? 2 : 3}>No properties defined</TableCell>
               </TableRow>
-            );
-          })}
+            </Conditional>
           </TableBody>
         </Table>
       </TableContainer>

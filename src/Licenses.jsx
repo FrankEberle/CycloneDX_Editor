@@ -1,5 +1,4 @@
 import React from 'react';
-import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
@@ -27,7 +26,7 @@ import Collapse from '@mui/material/Collapse';
 import * as CycloneDX from './cyclonedx';
 import YesNoDialog from './YesNoDialog';
 import Properties from './Properties';
-import { ReadOnly } from './helper';
+import { ReadOnly, Conditional } from './helper';
 
 
 function LicenseEditDialog({license, saveAction, closeAction}) {
@@ -51,10 +50,10 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
       setWarnText("Name or ID is requird.");
       return;
     }
-
     const data = {
       "_id": license["_id"],
       "license": {
+        ...license.license,
         ...Object.fromEntries(formData.entries()),
         "properties": license.license.properties
       },
@@ -102,6 +101,7 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
               label="ID"
               name="id"
               sx={{mt: 2}}
+              variant="standard"
               slotProps={{
                   select: {
                       native: true,
@@ -164,11 +164,7 @@ export default function Licenses({licenses, readOnly}) {
     if (data["_id"] === undefined) {
       licenses.push(CycloneDX.prepareLicense(data));
     } else {
-      for (let i = 0; i < licenses.length; ++i) {
-        if (licenses[i]["_id"] == data["_id"]) {
-          licenses[i] = data;
-        }
-      }
+      CycloneDX.replaceArrayElem(licenses, data);
     }
     setLicensesList([...licenses]);
   }
@@ -199,38 +195,45 @@ export default function Licenses({licenses, readOnly}) {
         saveAction={save}
         closeAction={closeDialog}
       />
-      <TableContainer component={Paper}>
+      <TableContainer sx={{mt: 3}}>
         <Table size='small' sx={{tableLayout: 'fixed'}}>
           <TableHead>
-            <TableRow>
-              <TableCell sx={{fontWeight: 'bolder'}} colSpan={3}>Licenses</TableCell>
+            <TableRow sx={{borderBottomStyle: 'double', borderBottomColor: 'divider'}}>
+              <TableCell colSpan={readOnly ? 2 : 3}>Licenses</TableCell>
             </TableRow>
             <TableRow>
-              <TableCell sx={{fontWeight: 'bolder', maxWidth: 200}}>ID / Name</TableCell>
-              <TableCell sx={{fontWeight: 'bolder'}}>URL</TableCell>
+              <TableCell sx={{fontStyle: 'italic', maxWidth: 200}}>ID / Name</TableCell>
+              <TableCell sx={{fontStyle: 'italic'}}>URL</TableCell>
               <ReadOnly readOnly={readOnly}>
                 <TableCell align='right'><IconButton aria-label="Add" onClick={() => {setEditLic({license: {properties: []}})}}><AddIcon/></IconButton></TableCell>
               </ReadOnly>
             </TableRow>
           </TableHead>
           <TableBody>
-          { licensesList.map((l) => {
-            if (l["license"] === undefined) {
-              return <></>
-            }
-            return (
-              <TableRow key={l._id}>
-                <TableCell>{l.license["id"] !== undefined ? "ID: " + l.license.id : "Name: " + l.license.name}</TableCell>
-                <TableCell>{l.license["url"] !== undefined ? l.license.url : ""}</TableCell>
-                <ReadOnly readOnly={readOnly}>
-                  <TableCell align='right'>
-                    <IconButton aria-label="Edit" onClick={() => {setEditLic(l)}}><EditIcon/></IconButton>
-                    <IconButton aria-label="Delete" onClick={() => {setDelLic(l._id)}}><DeleteIcon/></IconButton>
-                  </TableCell>
-                </ReadOnly>
-              </TableRow>
+            <Conditional show={licensesList.length > 0}>
+            { licensesList.map((l) => {
+              if (l["license"] === undefined) {
+                return <></>
+              }
+              return (
+                <TableRow key={l._id} hover>
+                  <TableCell>{l.license["id"] !== undefined ? "ID: " + l.license.id : "Name: " + l.license.name}</TableCell>
+                  <TableCell>{l.license["url"] !== undefined ? l.license.url : ""}</TableCell>
+                  <ReadOnly readOnly={readOnly}>
+                    <TableCell align='right'>
+                      <IconButton aria-label="Edit" onClick={() => {setEditLic(l)}}><EditIcon/></IconButton>
+                      <IconButton aria-label="Delete" onClick={() => {setDelLic(l._id)}}><DeleteIcon/></IconButton>
+                    </TableCell>
+                  </ReadOnly>
+                </TableRow>
             );
-          })}
+            })}
+          </Conditional>
+          <Conditional show={licensesList.length == 0}>
+            <TableRow>
+              <TableCell colSpan={readOnly ? 2 : 3}>No licenses defined</TableCell>
+            </TableRow>
+          </Conditional>
           </TableBody>
         </Table>
       </TableContainer>
