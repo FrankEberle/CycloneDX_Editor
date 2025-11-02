@@ -180,8 +180,19 @@ function prepareComponent(c, noID) {
     return c;
 }
 
+function prepareMetadata(bom) {
+  setIfUndefined(bom, "metadata", {});
+  let metadata = bom["metadata"];
+  setIfUndefined(metadata, "component", {});
+  prepareComponent(metadata.component, true);
+  setIfUndefined(metadata, "properties", Array());
+  metadata.properties.forEach((p) => {prepareProperty(p)})
+}
+
 function prepareBom(bom) {
   bom["_modified"] = false;
+  setIfUndefined(bom, "components", Array());
+  prepareMetadata(bom);
   foreachComponent(bom, (c) => {
     prepareComponent(c);
     return [true, undefined];
@@ -191,42 +202,41 @@ function prepareBom(bom) {
 
 function removeEmptyFields(o) {
   for (const [key, value] of Object.entries(o)) {
+    if (key == "_id") {
+      delete o[key];
+      continue;
+    }
+    // String
     if (typeof(o[key]) == "string" && value == "") {
       delete o[key];
     }
-    if (typeof(o[key]) == "object" && o[key].constructor.name == "Array" && value.length == 0) {
-      delete o[key];
+    // Object
+    if (typeof(o[key]) == "object") {
+      // Arry
+      if (o[key].constructor.name == "Array") {
+        // Invoke function for each string element
+        for (let i = 0; i < o[key].length; ++i) {
+          removeEmptyFields(o[key][i]);
+        }
+        // Remove entire array when there are no elements
+        if (o[key].length == 0) {
+          delete o[key];
+        }
+      } else {
+        // Other object
+        removeEmptyFields(o[key]);
+        // remove object if it is empty
+        if (Object.keys(o[key]).length == 0) {
+          delete o[key];
+        }
+      }
     }
   }
-}
-
-function removeIdFromArrayElements(aArray) {
-  if (aArray !== undefined) {
-    aArray.forEach((e) => {delete e._id});
-  }
+  return o;
 }
 
 function cleanBom(bom) {
   delete bom._modified;
-  foreachComponent(bom, (c) => {
-    delete c._id;
-    removeIdFromArrayElements(c.properties);
-    c.licenses.forEach((l) => {
-      delete l._id;
-      if (l["license"] !== undefined) {
-        removeIdFromArrayElements(l.license["properties"]);
-        removeEmptyFields(l.license)
-      }
-    });
-    c.externalReferences.forEach((r) => {
-      delete r._id;
-      removeIdFromArrayElements(r.hashes);
-      removeEmptyFields(r);
-    });
-    removeIdFromArrayElements(c.hashes);
-    removeEmptyFields(c);
-    return [true, undefined];
-  });
   removeEmptyFields(bom);
   return bom;
 }
@@ -307,6 +317,19 @@ function emptyBom() {
   return bom;
 }
 
+function getValue(base, name, defaultValue) {
+  let value = base;
+  const parts = name.split(".");
+
+  for (let i = 0; i < parts.length; ++i) {
+    value = value[parts[i]];
+    if (value === undefined) {
+      return defaultValue;
+    }
+  }
+  return value;
+}
+
 export {
   getComponentTypes,
   componentLookup,
@@ -324,4 +347,5 @@ export {
   prepareHash,
   getHashAlgo,
   replaceArrayElem,
+  getValue,
 };

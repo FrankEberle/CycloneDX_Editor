@@ -79,7 +79,7 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
 }
 
 
-export default function Properties({form_id, properties, readOnly}) {
+export default function Properties({form_id, properties, noTitle, readOnly}) {
   const [props, setProps] = React.useState([]);
   const [editProp, setEditProp] = React.useState(undefined);
 
@@ -124,6 +124,7 @@ export default function Properties({form_id, properties, readOnly}) {
           ]
         }
         readOnly={readOnly}
+        noTitle={noTitle}
         items={props}
         deleteAction={(idx) => {
           properties.splice(idx, 1);

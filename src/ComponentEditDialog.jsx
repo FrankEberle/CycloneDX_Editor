@@ -2,13 +2,11 @@ import * as React from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import Divider from '@mui/material/Divider';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
-import Box from '@mui/material/Box';
 
 import ComponentEdit from './ComponentEdit';
 
@@ -25,9 +23,17 @@ export default function ComponentEditDialog({component, saveAction, closeAction}
     event.stopPropagation();
     const formData = new FormData(event.currentTarget);
     formData.entries().forEach(([key, value]) => {
-        component[key] = value;
+        const keyParts = key.split(".");
+        let target = component;
+        for (let i = 0; i < keyParts.length -1; i++) {
+          if (target[keyParts[i]] === undefined) {
+            target[keyParts[i]] = {}
+          }
+          target = target[keyParts[i]];
+        }
+        target[keyParts[keyParts.length - 1]] = value;
     });
-    console.log(component);
+    console.log("onSubmit %o", component);
     saveAction();
   }
 

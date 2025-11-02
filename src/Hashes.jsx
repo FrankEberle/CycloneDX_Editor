@@ -90,7 +90,7 @@ function HashEditDialog({hash, saveAction, closeAction}) {
 }
 
 
-export default function Hashes({hashes, readOnly}) {
+export default function Hashes({hashes, noTitle, readOnly}) {
   const [edit, setEdit] = React.useState(undefined);
   const [hashList, setHashfList] = React.useState([]);
 
@@ -115,6 +115,7 @@ export default function Hashes({hashes, readOnly}) {
       />
       <EditTable
         title={['Hash', 'Hashes']}
+        noTitle={noTitle}
         readOnly={readOnly}
         items={hashList}
         addAction={() => {setEdit({})}}

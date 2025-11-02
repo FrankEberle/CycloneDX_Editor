@@ -132,7 +132,7 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
   )
 }
 
-export default function Licenses({licenses, readOnly}) {
+export default function Licenses({licenses, noTitle, readOnly}) {
   const [licensesList, setLicensesList] = React.useState([]);
   const [editLic, setEditLic] = React.useState(undefined);
 
@@ -163,6 +163,7 @@ export default function Licenses({licenses, readOnly}) {
       />
       <EditTable
         title={['License', 'Licenses']}
+        noTitle={noTitle}
         readOnly={readOnly}
         colSpec={
           [

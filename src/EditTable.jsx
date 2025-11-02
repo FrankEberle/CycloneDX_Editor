@@ -17,7 +17,7 @@ import YesNoDialog from './YesNoDialog';
 import { Conditional } from './helper';
 
 
-export default function EditTable({items, title, colSpec, readOnly, addAction, editAction, deleteAction}) {
+export default function EditTable({items, title, colSpec, noTitle, readOnly, addAction, editAction, deleteAction}) {
   /*
   {
     label: "",
@@ -25,13 +25,8 @@ export default function EditTable({items, title, colSpec, readOnly, addAction, e
     maxWidth: "",
   }
   */
-
-  console.log("items %o", items);
-
   const [del, setDel] = React.useState(undefined);
-  
   if (readOnly === undefined) readOnly = false;
-
   return (
     <Box>
       <YesNoDialog 
@@ -46,12 +41,14 @@ export default function EditTable({items, title, colSpec, readOnly, addAction, e
           setDel(undefined);
         }}
       />
-      <TableContainer sx={{mt: 3}}>
+      <TableContainer sx={{mt: noTitle ? 0 : 3}}>
         <Table size='small' sx={{tableLayout: 'fixed'}}>
           <TableHead>
-            <TableRow sx={{borderBottomStyle: 'double', borderBottomColor: 'divider'}}>
-              <TableCell colSpan={readOnly ? colSpec.length : colSpec.length + 1}>{title[1]}</TableCell>
-            </TableRow>
+            <Conditional show={!noTitle}>
+              <TableRow sx={{borderBottomStyle: 'double', borderBottomColor: 'divider'}}>
+                <TableCell colSpan={readOnly ? colSpec.length : colSpec.length + 1}>{title[1]}</TableCell>
+              </TableRow>
+            </Conditional>
             <TableRow>
               { colSpec.map((cs) => {
                   let sx = {fontStyle: "italic"}
@@ -59,7 +56,7 @@ export default function EditTable({items, title, colSpec, readOnly, addAction, e
                     sx["maxWidth"] = cs.maxWidth;
                   }
                   return (
-                   <TableCell sx={sx}>{cs.label}</TableCell>
+                  <TableCell sx={sx}>{cs.label}</TableCell>
                   );
                 }
               )}
@@ -67,7 +64,7 @@ export default function EditTable({items, title, colSpec, readOnly, addAction, e
                 <TableCell align='right'><IconButton aria-label="Add" onClick={addAction}><AddIcon/></IconButton></TableCell>
               </Conditional>
             </TableRow>
-          </TableHead>
+          </TableHead>          
           <TableBody>
             <Conditional show={items.length > 0}>
             { items.map((item, idx) => {

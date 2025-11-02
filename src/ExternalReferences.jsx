@@ -109,7 +109,7 @@ function ReferenceEditDialog({reference, saveAction, closeAction}) {
   );
 }
 
-export default function ExternalReferences({references, readOnly}) {
+export default function ExternalReferences({references, noTitle, readOnly}) {
   const [edit, setEdit] = React.useState(undefined);
   const [refList, setRefList] = React.useState([]);
 
@@ -134,6 +134,7 @@ export default function ExternalReferences({references, readOnly}) {
       />
       <EditTable
         title={['External Reference', 'External References']}
+        noTitle={noTitle}
         readOnly={readOnly}
         items={refList}
         addAction={() => {setEdit({})}}

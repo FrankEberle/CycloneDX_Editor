@@ -270,7 +270,7 @@ export default function ComponentsView({show, bom}) {
         <ComponentEdit
           component={component}
           readOnly={true}
-        />  
+        />
       </Box>
     </Box>
   )

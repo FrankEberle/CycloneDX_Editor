@@ -18,6 +18,7 @@ import './App.css';
 
 import DrawerMenu from './DrawerMenu';
 import ComponentsView from './ComponentsView';
+import MetadataView from './MetadataView';
 import SaveDialog from './SaveDialog';
 import * as CycloneDX from './cyclonedx';
 
@@ -151,14 +152,6 @@ function App() {
     ]
   ];
 
-  function MetadataView({show}) {
-    return (
-        <Box sx={{display: show ? 'flex' : 'none', flexDirection: 'row', flexGrow: 1, minHeight: 0, overflow: 'auto'}}>
-          Metadata
-        </Box>
-    );
-  }
-
   return (
     // 1. Haupt-Container (Vertikale Flexbox für AppBar + Content)
     <>
@@ -187,7 +180,7 @@ function App() {
         </AppBar>
         <MetadataView
           show={view == "metadata"}
-          bom={bom}
+          metadata={bom.metadata}
         />
         <ComponentsView
           show={view == "components"}
