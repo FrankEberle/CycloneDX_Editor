@@ -1,6 +1,4 @@
-import React from 'react';
 import FormControl from '@mui/material/FormControl';
-import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
 
 import * as CycloneDX from './cyclonedx';
@@ -11,49 +9,13 @@ import Hashes from './Hashes';
 import CompAccordion from './CompAccordion';
 import Manufacturer from './Manufacturer';
 import CeTextField from './CeTextField';
+import CeDropdownField from './CeDropdownField';
 
 export default function ComponentEdit({component, readOnly}) {
     const typeValues = CycloneDX.getComponentTypes();
 
     if (readOnly === undefined) readOnly = false;
 
-    function CmpDropdownField({label, name, options}) {
-        if (readOnly) {
-            return (
-                <TextField
-                    size='small'
-                    label={label}
-                    name={name}
-                    defaultValue={component[name] !== undefined ? component[name] : ""}
-                    slotProps={{
-                        input: {
-                            readOnly: readOnly,
-                        },
-                    }}
-                />
-            );
-        }
-
-        return (
-            <TextField
-                select
-                label={label}
-                name={name}
-                required={true}
-                disabled={readOnly}
-                slotProps={{
-                    select: {
-                        native: true,
-                    },
-                }}
-                defaultValue={component[name] !== undefined ? component[name] : ""}
-            >
-                { options.map((v) => (
-                    <option key={v} value={v}>{v}</option>
-                ))}
-            </TextField>
-        );
-    }
 
     if (component == null) {
         return <></>
@@ -78,7 +40,13 @@ export default function ComponentEdit({component, readOnly}) {
                             readOnly={readOnly}
                             defaultValue={CycloneDX.getValue(component, "name", "")}
                         />
-                        <CmpDropdownField label='Type' name='type' options={typeValues}/>
+                        <CeDropdownField
+                            label='Type'
+                            name='type'
+                            readOnly={readOnly}
+                            defaultValue={CycloneDX.getValue(component, "type", "")}
+                            options={typeValues}
+                        />
                         <CeTextField
                             label='Version'
                             name='version'

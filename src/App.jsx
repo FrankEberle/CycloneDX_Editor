@@ -174,7 +174,7 @@ function App() {
           <Toolbar>
             <DrawerMenu options={burgerMenuItems}/>
             <Typography variant="h6" component="div">
-              CycloneDX Editor
+              CycloneDX Editor - {view.substring(0, 1).toUpperCase()+view.substring(1)}
             </Typography>
           </Toolbar>
         </AppBar>

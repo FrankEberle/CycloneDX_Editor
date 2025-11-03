@@ -14,7 +14,6 @@ import ComponentEditDialog from './ComponentEditDialog';
 import ComponentEdit from './ComponentEdit';
 import YesNoDialog from './YesNoDialog';
 import * as CycloneDX from './cyclonedx';
-import { Typography } from '@mui/material';
 
 function treeViewGetItemId(component) {
   return component["_id"];

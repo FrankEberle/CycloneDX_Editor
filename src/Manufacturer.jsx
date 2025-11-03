@@ -8,7 +8,8 @@ import CeTextField from './CeTextField';
 
 export default function Manufacturer({objName, component, readOnly}) {
   const [comp, setComp] = React.useState(component);
-   React.useEffect(() => {
+
+  React.useEffect(() => {
     setComp(component);
   }, [component]);
 

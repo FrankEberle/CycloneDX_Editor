@@ -1,15 +1,18 @@
 import { FormControl, Stack } from '@mui/material';
+
 import CompAccordion from './CompAccordion';
 import Properties from './Properties';
-
 import CeTextField from './CeTextField';
 import Manufacturer from './Manufacturer';
 
-export default function MetadataEdit({metadata, readonly}) {
+import * as CycloneDX from './cyclonedx';
+
+export default function MetadataEdit({metadata, readOnly}) {
   return (
     <Stack>
       <CompAccordion
         title={"Component"}
+        defaultExpanded={true}
       >
         <FormControl
           fullWidth
@@ -18,12 +21,15 @@ export default function MetadataEdit({metadata, readonly}) {
             <CeTextField
               label="Name"
               name="name"
+              defaultValue={CycloneDX.getValue(metadata, 'name', '')}
               required={true}
+              readOnly={readOnly}
             />
             <CeTextField
               label="Version"
               name="version"
-              required={true}
+              defaultValue={CycloneDX.getValue(metadata, 'version', '')}
+              readOnly={readOnly}
             />
           </Stack>
         </FormControl>
@@ -38,6 +44,8 @@ export default function MetadataEdit({metadata, readonly}) {
             <CeTextField
               label="Timestamp"
               name="timestamp"
+              readOnly={readOnly}
+              defaultValue={CycloneDX.getValue(metadata, 'timestamp', '')}
             />
           </Stack>
         </FormControl>
@@ -49,6 +57,7 @@ export default function MetadataEdit({metadata, readonly}) {
         <Manufacturer
           component={metadata}
           objName={"manufacturer"}
+          readOnly={readOnly}
         />
       </CompAccordion>
       <CompAccordion
@@ -57,6 +66,7 @@ export default function MetadataEdit({metadata, readonly}) {
         <Manufacturer
           component={metadata}
           objName={"supplier"}
+          readOnly={readOnly}
         />
       </CompAccordion>
       <CompAccordion
@@ -65,6 +75,7 @@ export default function MetadataEdit({metadata, readonly}) {
         <Properties
           properties={metadata.properties}
           noTitle={true}
+          readOnly={readOnly}
         />
       </CompAccordion>
   </Stack>

@@ -8,12 +8,11 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 
-import ComponentEdit from './ComponentEdit';
-import * as CycloneDX from './cyclonedx';
+import MetadataEdit from './MetadataEdit';
 
 
-export default function ComponentEditDialog({component, saveAction, closeAction}) {
-  if (component === undefined) {
+export default function MetadataEditDialog({metadata, open, saveAction, closeAction}) {
+  if (metadata === undefined) {
     return <></>;
   }
 
@@ -23,7 +22,7 @@ export default function ComponentEditDialog({component, saveAction, closeAction}
     const formData = new FormData(event.currentTarget);
     formData.entries().forEach(([key, value]) => {
         const keyParts = key.split(".");
-        let target = component;
+        let target = metadata;
         for (let i = 0; i < keyParts.length -1; i++) {
           if (target[keyParts[i]] === undefined) {
             target[keyParts[i]] = {}
@@ -32,13 +31,13 @@ export default function ComponentEditDialog({component, saveAction, closeAction}
         }
         target[keyParts[keyParts.length - 1]] = value;
     });
-    console.log("Submit %o", component);
+    console.log(metadata);
     saveAction();
   }
 
 
   return (
-    <Dialog open={true} fullScreen={true} maxWidth="1200">
+    <Dialog open={open} fullScreen={true} maxWidth="1200">
       <AppBar sx={{ position: 'relative' }}>
           <Toolbar>
             <IconButton
@@ -50,17 +49,17 @@ export default function ComponentEditDialog({component, saveAction, closeAction}
               <CloseIcon />
             </IconButton>
             <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-              {component["_id"] === undefined ? "New Component" : "Edit Component"}
+              Edit Metadata
             </Typography>
-            <Button autoFocus color="inherit" type='submit' form='component-edit-form'>
+            <Button autoFocus color="inherit" type='submit' form='metadata-edit-form'>
               save
             </Button>
           </Toolbar>
         </AppBar>
         <DialogContent>
-          <form id="component-edit-form" onSubmit={onSubmit}>
-            <ComponentEdit
-              component={component}
+          <form id="metadata-edit-form" onSubmit={onSubmit}>
+            <MetadataEdit
+              metadata={metadata}
             />
           </form>
         </DialogContent>
