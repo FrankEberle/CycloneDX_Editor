@@ -1,6 +1,6 @@
 import TextField from '@mui/material/TextField';
 
-export default function CmpDropdownField({label, name, readOnly, defaultValue, options}) {
+export default function CmpDropdownField({label, name, readOnly, defaultValue, emptyOpt, options}) {
     if (readOnly) {
         return (
             <TextField
@@ -12,6 +12,9 @@ export default function CmpDropdownField({label, name, readOnly, defaultValue, o
                     input: {
                         readOnly: readOnly,
                     },
+                    inputLabel: {
+                        shrink: true
+                    }
                 }}
             />
         );
@@ -24,13 +27,18 @@ export default function CmpDropdownField({label, name, readOnly, defaultValue, o
             name={name}
             required={true}
             disabled={readOnly}
+            size='small'
             slotProps={{
                 select: {
                     native: true,
                 },
+                inputLabel: {
+                    shrink: true
+                }
             }}
             defaultValue={defaultValue}
         >
+            { emptyOpt && <option key='' value=''>-- Please select --</option>}
             { options.map((v) => (
                 <option key={v} value={v}>{v}</option>
             ))}

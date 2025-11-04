@@ -1,9 +1,10 @@
 import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
 
-export default function CeTextField({label, name, defaultValue, required, readOnly}) {
+export default function CeTextField({label, name, defaultValue, required, readOnly, autoFocus}) {
   readOnly = readOnly !== undefined ? readOnly : false;
   required = required !== undefined ? required : false;
+  autoFocus = autoFocus !== undefined ? autoFocus : false;
 
   if (readOnly) {
     return (
@@ -29,7 +30,9 @@ export default function CeTextField({label, name, defaultValue, required, readOn
         label={label}
         name={name}
         required={required}
+        pattern="abc.*"
         defaultValue={defaultValue}
+        autoFocus={autoFocus}
         slotProps={{
             input: {
                 readOnly: readOnly,

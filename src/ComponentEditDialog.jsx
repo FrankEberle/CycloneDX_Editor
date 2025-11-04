@@ -38,7 +38,11 @@ export default function ComponentEditDialog({component, saveAction, closeAction}
 
 
   return (
-    <Dialog open={true} fullScreen={true} maxWidth="1200">
+    <Dialog
+      open={true}
+      fullScreen={true}
+      disableRestoreFocus
+    >
       <AppBar sx={{ position: 'relative' }}>
           <Toolbar>
             <IconButton

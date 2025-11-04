@@ -3,8 +3,9 @@ import { FormControl, Stack } from '@mui/material';
 import CompAccordion from './CompAccordion';
 import Properties from './Properties';
 import CeTextField from './CeTextField';
+import CeDropdownField from './CeDropdownField';
 import Manufacturer from './Manufacturer';
-
+import Persons from './Persons';
 import * as CycloneDX from './cyclonedx';
 
 export default function MetadataEdit({metadata, readOnly}) {
@@ -20,15 +21,25 @@ export default function MetadataEdit({metadata, readOnly}) {
           <Stack spacing={2}>
             <CeTextField
               label="Name"
-              name="name"
-              defaultValue={CycloneDX.getValue(metadata, 'name', '')}
+              name="component.name"
+              defaultValue={CycloneDX.getValue(metadata, 'component.name', '')}
               required={true}
               readOnly={readOnly}
+              autoFocus={true}
+            />
+            <CeDropdownField
+              label="Type"
+              name="component.type"
+              required={true}
+              readOnly={readOnly}
+              defaultValue={CycloneDX.getValue(metadata, 'component.type', '')}
+              options={CycloneDX.getComponentTypes()}
+              emptyOpt={true}
             />
             <CeTextField
               label="Version"
-              name="version"
-              defaultValue={CycloneDX.getValue(metadata, 'version', '')}
+              name="component.version"
+              defaultValue={CycloneDX.getValue(metadata, 'component.version', '')}
               readOnly={readOnly}
             />
           </Stack>
@@ -57,6 +68,16 @@ export default function MetadataEdit({metadata, readOnly}) {
         <Manufacturer
           component={metadata}
           objName={"manufacturer"}
+          readOnly={readOnly}
+        />
+      </CompAccordion>
+      <CompAccordion
+        title={"Authors"}
+      >
+        <Persons
+          persons={metadata.authors}
+          title={['Author', 'Authors']}
+          noTitle={true}
           readOnly={readOnly}
         />
       </CompAccordion>

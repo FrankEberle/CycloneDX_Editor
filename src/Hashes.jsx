@@ -92,10 +92,10 @@ function HashEditDialog({hash, saveAction, closeAction}) {
 
 export default function Hashes({hashes, noTitle, readOnly}) {
   const [edit, setEdit] = React.useState(undefined);
-  const [hashList, setHashfList] = React.useState([]);
+  const [hashList, setHashList] = React.useState([]);
 
   React.useEffect(() => {
-    setHashfList(hashes);
+    setHashList(hashes);
   }, [hashes]);
 
   return (
@@ -109,7 +109,7 @@ export default function Hashes({hashes, noTitle, readOnly}) {
             CycloneDX.replaceArrayElem(hashes, hash);
           }
           setEdit(undefined);
-          setHashfList([...hashes]);
+          setHashList([...hashes]);
         }}
         closeAction={() => {setEdit(undefined)}}
       />
@@ -122,7 +122,7 @@ export default function Hashes({hashes, noTitle, readOnly}) {
         editAction={(ref) => {setEdit(ref)}}
         deleteAction={(idx) => {
           hashes.splice(idx, 1);
-          setHashfList([...hashes]);
+          setHashList([...hashes]);
         }}
         colSpec={
           [

@@ -165,6 +165,11 @@ function prepareHash(r) {
   return r;
 }
 
+function preparePerson(p) {
+  setIdIfUndefined(p);
+  return p;
+}
+
 function prepareComponent(c, noID) {
     if (noID !== true) {
       c["_id"] = crypto.randomUUID();
@@ -187,6 +192,8 @@ function prepareMetadata(bom) {
   prepareComponent(metadata.component, true);
   setIfUndefined(metadata, "properties", Array());
   metadata.properties.forEach((p) => {prepareProperty(p)})
+  setIfUndefined(metadata, "authors", Array());
+  metadata.authors.forEach((a) => {preparePerson(a)})
 }
 
 function prepareBom(bom) {
@@ -339,6 +346,7 @@ export {
   emptyBom,
   prepareProperty,
   prepareLicense,
+  preparePerson,
   cleanBom,
   deepCopy,
   getSpdxIDs,

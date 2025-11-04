@@ -37,7 +37,10 @@ export default function MetadataEditDialog({metadata, open, saveAction, closeAct
 
 
   return (
-    <Dialog open={open} fullScreen={true} maxWidth="1200">
+    <Dialog open={open}
+      fullScreen={true}
+      disableRestoreFocus
+    >
       <AppBar sx={{ position: 'relative' }}>
           <Toolbar>
             <IconButton

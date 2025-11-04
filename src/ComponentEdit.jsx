@@ -38,6 +38,7 @@ export default function ComponentEdit({component, readOnly}) {
                             name='name'
                             required={true}
                             readOnly={readOnly}
+                            autoFocus={true}
                             defaultValue={CycloneDX.getValue(component, "name", "")}
                         />
                         <CeDropdownField

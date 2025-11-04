@@ -5,13 +5,20 @@ import FormControl from '@mui/material/FormControl';
 import * as CycloneDX from './cyclonedx';
 
 import CeTextField from './CeTextField';
+import Persons from './Persons';
 
 export default function Manufacturer({objName, component, readOnly}) {
   const [comp, setComp] = React.useState(component);
 
   React.useEffect(() => {
+    if (component[objName] === undefined) {
+      component[objName] = {}
+    }
+    if (component[objName]["contact"] === undefined) {
+      component[objName]["contact"] = Array();
+    }
     setComp(component);
-  }, [component]);
+  }, [component, objName]);
 
   return (
     <FormControl fullWidth={true} size="small">
@@ -57,6 +64,11 @@ export default function Manufacturer({objName, component, readOnly}) {
           name={objName + ".address.streetAddress"}
           readOnly={readOnly}
           defaultValue={CycloneDX.getValue(comp, objName + ".address.streetAddress", "")}
+        />
+        <Persons
+          title={['Contact', 'Contact']}
+          readOnly={readOnly}
+          persons={CycloneDX.getValue(comp, objName + ".contact", Array())}
         />
       </Stack>
     </FormControl>
