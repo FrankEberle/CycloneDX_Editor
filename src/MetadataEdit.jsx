@@ -1,3 +1,4 @@
+import React from 'react';
 import { FormControl, Stack } from '@mui/material';
 
 import CompAccordion from './CompAccordion';
@@ -8,7 +9,12 @@ import Manufacturer from './Manufacturer';
 import Persons from './Persons';
 import * as CycloneDX from './cyclonedx';
 
-export default function MetadataEdit({metadata, readOnly}) {
+export default function MetadataEdit({metadata, readOnly, register}) {
+
+  if (register === undefined) {
+    register = () => {};
+  }
+
   return (
     <Stack>
       <CompAccordion
@@ -57,6 +63,8 @@ export default function MetadataEdit({metadata, readOnly}) {
               name="timestamp"
               readOnly={readOnly}
               defaultValue={CycloneDX.getValue(metadata, 'timestamp', '')}
+              {...register("timestamp")}
+              regex={CycloneDX.formatRegEx("date-time")}
             />
           </Stack>
         </FormControl>

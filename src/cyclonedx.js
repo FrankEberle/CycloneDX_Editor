@@ -1,4 +1,14 @@
 import spdx_schema from './assets/spdx.schema.json';
+import jsf_0_82_schema from './assets/jsf-0.82.schema.json';
+import cycloneDxSchema12 from './assets/bom-1.2.schema.json?url';
+import cycloneDxSchema13 from './assets/bom-1.3.schema.json?url';
+import cycloneDxSchema14 from './assets/bom-1.4.schema.json?url';
+import cycloneDxSchema15 from './assets/bom-1.5.schema.json?url';
+import cycloneDxSchema16 from './assets/bom-1.6.schema.json?url';
+import Ajv from 'ajv';
+import AjvAddFormats from 'ajv-formats';
+import AvjAddFormatsDraft2019 from 'ajv-formats-draft2019';
+
 
 function getComponentTypes(version) {
   if (version === undefined || version == "1.6") {
@@ -93,6 +103,16 @@ function getHashAlgo(version) {
 
 function getSpdxIDs() {
   return spdx_schema.enum;
+}
+
+function formatRegEx(format) {
+  const regex = {
+    "date-time": new RegExp(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|([+-]\d{2}):(\d{2}))$/),
+  }
+  if (regex[format] === undefined) {
+    throw Error("Unknown format");
+  }
+  return regex[format];
 }
 
 function foreachComponent(bom, func) {
@@ -290,6 +310,10 @@ function emptyBom() {
             "name": "abc3",
             "value": "ABC"
           },
+          {
+            "name": "de.frank-eberle.3rdPartyType",
+            "value": "internal"
+          },
         ],
         licenses: [
           {
@@ -337,6 +361,38 @@ function getValue(base, name, defaultValue) {
   return value;
 }
 
+async function validateBom(bom) {
+  const versions = {
+    "1.2": cycloneDxSchema12,
+    "1.3": cycloneDxSchema13,
+    "1.4": cycloneDxSchema14,
+    "1.5": cycloneDxSchema15,
+    "1.6": cycloneDxSchema16,
+  };
+  const ajv = new Ajv({strict: false});
+  AjvAddFormats(ajv);
+  AvjAddFormatsDraft2019(ajv);
+  ajv.addSchema(spdx_schema, 'spdx.schema.json');
+  ajv.addSchema(jsf_0_82_schema, 'jsf-0.82.schema.json');
+
+
+  if (bom["specVersion"] === undefined) {
+    throw new Error("specVersion not defined in BOM.");
+  }
+  if (versions[bom["specVersion"]] === undefined) {
+    throw new Error("Unsupported CycloneDX version.");
+  }
+  const req = await fetch(versions[bom["specVersion"]]);
+  const cyclonedx_schema = await req.json();
+  const validate = ajv.compile(cyclonedx_schema);
+  if (validate(bom) === false) {
+    throw new Error(ajv.errorsText(validate.errors));
+  }
+  return true;
+}
+
+
+
 export {
   getComponentTypes,
   componentLookup,
@@ -356,4 +412,6 @@ export {
   getHashAlgo,
   replaceArrayElem,
   getValue,
+  formatRegEx,
+  validateBom,
 };

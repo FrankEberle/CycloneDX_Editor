@@ -9,30 +9,33 @@ import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 
 import MetadataEdit from './MetadataEdit';
+import { useFormValidate } from './hooks';
 
 
 export default function MetadataEditDialog({metadata, open, saveAction, closeAction}) {
+  const {register, validate} = useFormValidate();
   if (metadata === undefined) {
     return <></>;
   }
-
+  
   function onSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
-    const formData = new FormData(event.currentTarget);
-    formData.entries().forEach(([key, value]) => {
-        const keyParts = key.split(".");
-        let target = metadata;
-        for (let i = 0; i < keyParts.length -1; i++) {
-          if (target[keyParts[i]] === undefined) {
-            target[keyParts[i]] = {}
+    if (validate()) {
+      const formData = new FormData(event.currentTarget);
+      formData.entries().forEach(([key, value]) => {
+          const keyParts = key.split(".");
+          let target = metadata;
+          for (let i = 0; i < keyParts.length -1; i++) {
+            if (target[keyParts[i]] === undefined) {
+              target[keyParts[i]] = {}
+            }
+            target = target[keyParts[i]];
           }
-          target = target[keyParts[i]];
-        }
-        target[keyParts[keyParts.length - 1]] = value;
-    });
-    console.log(metadata);
-    saveAction();
+          target[keyParts[keyParts.length - 1]] = value;
+      });
+      saveAction();
+    }
   }
 
 
@@ -62,6 +65,7 @@ export default function MetadataEditDialog({metadata, open, saveAction, closeAct
         <DialogContent>
           <form id="metadata-edit-form" onSubmit={onSubmit}>
             <MetadataEdit
+              register={register}
               metadata={metadata}
             />
           </form>

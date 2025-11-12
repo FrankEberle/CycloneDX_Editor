@@ -1,10 +1,31 @@
+import React from 'react';
 import TextField from '@mui/material/TextField';
-import Stack from '@mui/material/Stack';
 
-export default function CeTextField({label, name, defaultValue, required, readOnly, autoFocus}) {
+export default function CeTextField({label, name, defaultValue, required, readOnly, autoFocus, ref, regex}) {
+  const [isValid, setIsValid] = React.useState(true);
+  const inputRef = React.useRef(null);
   readOnly = readOnly !== undefined ? readOnly : false;
   required = required !== undefined ? required : false;
   autoFocus = autoFocus !== undefined ? autoFocus : false;
+
+  React.useImperativeHandle(ref, () => {
+    return {
+      validate: () => {
+        let result = true;
+        if (regex !== undefined) {
+          if ((inputRef.current.value != "") && (!regex.test(inputRef.current.value))) {
+            result = false;
+          }
+        }
+        setIsValid(result);
+        return result;
+      }
+    };
+  }, []);
+
+  function onChange() {
+    setIsValid(true);
+  }
 
   if (readOnly) {
     return (
@@ -33,6 +54,9 @@ export default function CeTextField({label, name, defaultValue, required, readOn
         pattern="abc.*"
         defaultValue={defaultValue}
         autoFocus={autoFocus}
+        error={!isValid}
+        inputRef={inputRef}
+        onChange={onChange}
         slotProps={{
             input: {
                 readOnly: readOnly,

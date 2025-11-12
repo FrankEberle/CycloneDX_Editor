@@ -9,11 +9,6 @@ import SaveIcon from '@mui/icons-material/Save';
 import ClearIcon from '@mui/icons-material/Clear';
 import GridViewIcon from '@mui/icons-material/GridView';
 
-
-import Ajv from 'ajv';
-import AjvAddFormats from 'ajv-formats';
-import AvjAddFormatsDraft2019 from 'ajv-formats-draft2019';
-
 import './App.css';
 
 import DrawerMenu from './DrawerMenu';
@@ -21,11 +16,9 @@ import ComponentsView from './ComponentsView';
 import MetadataView from './MetadataView';
 import SaveDialog from './SaveDialog';
 import * as CycloneDX from './cyclonedx';
+import ConfigContext from './ConfigContext';
 
-// Load json schema
-import spdx_schema from './assets/spdx.schema.json';
-import jsf_0_82_schema from './assets/jsf-0.82.schema.json';
-import { Paper } from '@mui/material';
+import { Alert, Snackbar } from '@mui/material';
 
 
 function loadTextFile() {
@@ -50,6 +43,24 @@ function loadTextFile() {
   return p;
 }
 
+async function loadConfig() {
+  // https://react.dev/learn/passing-data-deeply-with-context
+  const url = window.location + "/config.json";
+  const req = await fetch(url);
+  console.log(req);
+  let config;
+  try {
+    config = await req.json();
+  } catch (error) {
+    console.log("Failed to load config: %s", error);
+    config = {
+    }
+  }
+  if (config["componentProperties"] === undefined) {
+    config["componentProperties"] = Array();
+  }
+  return config;
+}
 
 async function loadBom(setBom) {
   const text = await loadTextFile();
@@ -57,30 +68,9 @@ async function loadBom(setBom) {
     return;
   }
   var bom = null;
-  const versions = ["1.2", "1.3", "1.4", "1.5", "1.6"];
-  const ajv = new Ajv({strict: false});
-  AjvAddFormats(ajv);
-  AvjAddFormatsDraft2019(ajv);
-  ajv.addSchema(spdx_schema, 'spdx.schema.json');
-  ajv.addSchema(jsf_0_82_schema, 'jsf-0.82.schema.json');
-
   try {
     bom = JSON.parse(text);
-    if (bom["specVersion"] === undefined) {
-      throw new Error("specVersion not defined");
-    }
-    if (! versions.includes(bom["specVersion"])) {
-      throw new Error("Unsupported specVersion");
-    }
-    // TODO: fix absolute path
-    const schema_url = "/src/assets/bom-" + bom["specVersion"] + ".schema.json";
-    const req = await fetch(schema_url);
-    const cyclonedx_schema = await req.json();
-    const validate = ajv.compile(cyclonedx_schema);
-    if (validate(bom) === false) {
-      console.log(validate.errors);
-      throw new Error(ajv.errorsText(validate.errors));
-    }
+    await CycloneDX.validateBom(bom);
   } catch (error) {
     console.log("Error: " + error.name + " / " + error.message);
     return;
@@ -108,6 +98,13 @@ function App() {
   const [bom, setBom] = React.useState(CycloneDX.emptyBom());
   const [view, setView] = React.useState('metadata');
   const [showSaveDialog, setShowSaveDialog] = React.useState(false);
+  const [config, setConfig] = React.useState(null);
+
+  React.useEffect(() => {
+    loadConfig().then((c) => {
+      setConfig(c);
+    });
+  }, []);
 
   function bomLoaded(newBom) {
     if (newBom["components"] === undefined) bom["components"] = Array();
@@ -152,42 +149,53 @@ function App() {
     ]
   ];
 
+  if (config == null) {
+    return (<></>);
+  }
+
   return (
-    // 1. Haupt-Container (Vertikale Flexbox für AppBar + Content)
-    <>
-      <SaveDialog
-        open={showSaveDialog}
-        saveAction={(data) => {saveBom(bom, data.filename)}}
-        closeAction={() => {setShowSaveDialog(false)}}
-      />
-      <Box sx={{display: "none"}}><input type="file" id="__loadFileBtn"/></Box>
-      <Box
-        sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          height: '100vh', // Volle Viewport-Höhe
-          overflow: 'hidden' // Verhindert Scrollen auf der Hauptebene
-        }}
-      >
-        {/* #1 AppBar (nimmt festen Platz ein) */}
-        <AppBar position="static">
-          <Toolbar>
-            <DrawerMenu options={burgerMenuItems}/>
-            <Typography variant="h6" component="div">
-              CycloneDX Editor - {view.substring(0, 1).toUpperCase()+view.substring(1)}
-            </Typography>
-          </Toolbar>
-        </AppBar>
-        <MetadataView
-          show={view == "metadata"}
-          metadata={bom.metadata}
+    <ConfigContext value={config}>
+      <>
+        <SaveDialog
+          open={showSaveDialog}
+          saveAction={(data) => {saveBom(bom, data.filename)}}
+          closeAction={() => {setShowSaveDialog(false)}}
         />
-        <ComponentsView
-          show={view == "components"}
-          bom={bom}
-        />
-      </Box>
-    </>
+        <Box sx={{display: "none"}}><input type="file" id="__loadFileBtn"/></Box>
+        <Box
+          sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: '100vh', // Volle Viewport-Höhe
+            overflow: 'hidden' // Verhindert Scrollen auf der Hauptebene
+          }}
+        >
+          <AppBar position="static">
+            <Toolbar>
+              <DrawerMenu options={burgerMenuItems}/>
+              <Typography variant="h6" component="div">
+                CycloneDX Editor - {view.substring(0, 1).toUpperCase()+view.substring(1)}
+              </Typography>
+            </Toolbar>
+          </AppBar>
+          <Alert
+            sx={{width: '100%'}}
+            severity='warning'
+          >
+            Failed to load bom.
+          </Alert>
+
+          <MetadataView
+            show={view == "metadata"}
+            metadata={bom.metadata}
+          />
+          <ComponentsView
+            show={view == "components"}
+            bom={bom}
+          />
+        </Box>
+      </>
+    </ConfigContext>
   );
 }
 
