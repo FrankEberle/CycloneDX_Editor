@@ -23,13 +23,11 @@ function getProp(obj, name, defaultValue) {
       }
     }
   }
-  console.log("Result %s", result);
   return result;
 }
 
 export default function ComponentEdit({component, readOnly}) {
     const config = React.useContext(ConfigContext);
-    console.log("Config %o", config);
     const typeValues = CycloneDX.getComponentTypes();
 
     if (readOnly === undefined) readOnly = false;
@@ -142,6 +140,7 @@ export default function ComponentEdit({component, readOnly}) {
                     if (p.type == "enum") {
                       return (
                         <CeDropdownField
+                          key={p.name}
                           label={p.label}
                           name="foo"
                           defaultValue={getProp(component, p.name, "")}
