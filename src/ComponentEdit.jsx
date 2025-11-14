@@ -112,7 +112,12 @@ export default function ComponentEdit({component, readOnly}) {
             id="properties-accordion"
             title="Properties"
         >
-            <Properties form_id="component" properties={component.properties} noTitle={true} readOnly={readOnly}/>
+            <Properties
+                form_id="component"
+                properties={component.properties}
+                filter={config.componentProperties.map((p) => {return p.name})}
+                noTitle={true} readOnly={readOnly}
+            />
         </CompAccordion>
         { config.componentProperties.length > 0 &&
           <CompAccordion
