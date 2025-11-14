@@ -111,12 +111,10 @@ export default function ComponentsView({show, bom}) {
   }, [bom]);
 
   function refreshTree() {
-    console.log("refresh tree");
     setComponentsList([...bom.components]);
   }
 
   function newCmpDialogSave(formData) {
-    console.log(formData);
     let target;
     const subCmp = formData.get("subComponent");
     if ( subCmp !== undefined && subCmp == "on") {
@@ -136,7 +134,6 @@ export default function ComponentsView({show, bom}) {
       type: formData.get("type"),
     });
     target.components.push(newCmp);
-    console.log(target.components);
     setNewCmpOpen(false);
     setComponentsList([...bom.components]);
     setComponent(newCmp);
@@ -176,7 +173,6 @@ export default function ComponentsView({show, bom}) {
       let refreshRequired = false;
       CycloneDX.foreachComponent(bom, (c, a, idx) => {
         if (c["_id"] == editComponent["_id"]) {
-          console.log(editComponent);
           ["name", "version", "type"].forEach((field) => {
             if (c[field] != editComponent[field]) {
               refreshRequired = true;

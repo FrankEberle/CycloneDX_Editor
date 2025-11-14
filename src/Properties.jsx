@@ -79,7 +79,7 @@ function PropertiesEditDialog({id, prop, saveAction, closeAction}) {
 }
 
 
-export default function Properties({form_id, properties, noTitle, readOnly}) {
+export default function Properties({form_id, properties, filter, noTitle, readOnly}) {
   const [props, setProps] = React.useState([]);
   const [editProp, setEditProp] = React.useState(undefined);
 
@@ -123,6 +123,8 @@ export default function Properties({form_id, properties, noTitle, readOnly}) {
             },
           ]
         }
+        filter={filter}
+        filterCol="name"
         readOnly={readOnly}
         noTitle={noTitle}
         items={props}

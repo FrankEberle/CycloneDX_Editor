@@ -13,7 +13,6 @@ import * as CycloneDX from './cyclonedx';
 
 export default function NewComponentDialog({open, askSub, okAction, cancelAction}) {
   const handleSubmit = (event) => {
-    console.log("debug");
     event.preventDefault();
     okAction(new FormData(event.currentTarget));
   };

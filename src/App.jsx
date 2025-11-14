@@ -59,6 +59,9 @@ async function loadConfig() {
   if (config["componentProperties"] === undefined) {
     config["componentProperties"] = Array();
   }
+  if (config["licenseProperties"] === undefined) {
+    config["licenseProperties"] = Array();
+  }
   return config;
 }
 

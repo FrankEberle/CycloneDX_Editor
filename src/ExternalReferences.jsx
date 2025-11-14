@@ -138,7 +138,7 @@ export default function ExternalReferences({references, noTitle, readOnly}) {
         readOnly={readOnly}
         items={refList}
         addAction={() => {setEdit({})}}
-        editAction={(ref) => {setEdit(ref)}}
+        editAction={(ref) => {setEdit(CycloneDX.deepCopy(ref))}}
         deleteAction={(idx) => {
           references.splice(idx, 1);
           setRefList([...references]);

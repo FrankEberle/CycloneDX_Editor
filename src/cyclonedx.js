@@ -311,14 +311,24 @@ function emptyBom() {
             "value": "ABC"
           },
           {
-            "name": "de.frank-eberle.3rdPartyType",
+            "name": "de:frank-eberle:3rdPartyType",
             "value": "internal"
           },
         ],
         licenses: [
           {
             "license": {
-              "name": "foo"
+              "name": "foo",
+              "properties": [
+                {
+                  "name": "p1",
+                  "value": "v1"
+                },
+                {
+                  "name": "de:frank-eberle:selected",
+                  "value": "yes"
+                }
+              ]
             }
           },
           {
@@ -392,6 +402,67 @@ async function validateBom(bom) {
 }
 
 
+function formDataCopy(targetObj, formData) {
+    formData.entries().forEach(([key, value]) => {
+        let target = targetObj;
+        const keyParts = key.split(".");
+        for (let i = 0; i < keyParts.length -1; i++) {
+          if (target[keyParts[i]] === undefined) {
+            target[keyParts[i]] = {}
+          }
+          target = target[keyParts[i]];
+        }
+        let lastKey = keyParts[keyParts.length - 1];
+        if (lastKey.startsWith("__prop_")) {
+          lastKey = lastKey.substring(7);
+          let found = false;
+          if (target["properties"] === undefined) {
+            target["properties"] = Array();
+          }
+          for (let i = 0; i < target["properties"].length; ++i) {
+            if (target["properties"][i]["name"] == lastKey) {
+              target["properties"][i]["value"] = value;
+              found = true;
+              break;
+            }
+          }
+          if (! found) {
+            target["properties"].push({
+              "name": lastKey,
+              "value": value
+            })
+          }
+        } else {
+          target[lastKey] = value;
+        }
+    });
+}
+
+
+function isCustomProp(name) {
+  return name.startsWith("__prop_");
+}
+
+
+function storeCustomProp(properties, name, value) {
+  let found = false;
+  name = name.substring(7)
+  for (let i = 0; i < properties.length; i++) {
+    if (properties[i]["name"] == name) {
+      properties[i]["value"] = value;
+      found = true;
+      break;
+    }
+  }
+  if (! found) {
+    properties.push({
+      "name": name,
+      "value": value
+    })
+  }
+
+}
+
 
 export {
   getComponentTypes,
@@ -414,4 +485,7 @@ export {
   getValue,
   formatRegEx,
   validateBom,
+  formDataCopy,
+  isCustomProp,
+  storeCustomProp,
 };

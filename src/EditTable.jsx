@@ -17,7 +17,7 @@ import YesNoDialog from './YesNoDialog';
 import { Conditional } from './helper';
 
 
-export default function EditTable({items, title, colSpec, noTitle, readOnly, addAction, editAction, deleteAction}) {
+export default function EditTable({items, title, colSpec, noTitle, readOnly, addAction, editAction, deleteAction, filter, filterCol}) {
   /*
   {
     label: "",
@@ -26,6 +26,20 @@ export default function EditTable({items, title, colSpec, noTitle, readOnly, add
   }
   */
   const [del, setDel] = React.useState(undefined);
+  let filteredItems = Array();
+  for (let i = 0; i < items.length; i++) {
+    if (filter === undefined) {
+      filteredItems.push(items[i]);
+    } else {
+      if (! filter.includes(items[i][filterCol])) {
+        filteredItems.push(items[i]);
+      }
+    }
+  }
+
+  if (filter !== undefined) {
+    filteredItems.slice(0);
+  }
   if (readOnly === undefined) readOnly = false;
   return (
     <Box>
@@ -34,7 +48,14 @@ export default function EditTable({items, title, colSpec, noTitle, readOnly, add
         title="Confirmation"
         text={`Are you sure to delete the ${title[0]}?`}
         yesAction={() => {
-          deleteAction(del);
+          let delIdx;
+          for (let i = 0; i < items.length; i++) {
+            if (items[i]._id == del) {
+              delIdx = i;
+              break;
+            }
+          }
+          deleteAction(delIdx);
           setDel(undefined);
         }}
         noAction={() => {
@@ -66,8 +87,8 @@ export default function EditTable({items, title, colSpec, noTitle, readOnly, add
             </TableRow>
           </TableHead>          
           <TableBody>
-            <Conditional show={items.length > 0}>
-            { items.map((item, idx) => {
+            <Conditional show={filteredItems.length > 0}>
+            { filteredItems.map((item, idx) => {
               return (
                 <TableRow key={item._id} hover>
                   {
@@ -88,14 +109,14 @@ export default function EditTable({items, title, colSpec, noTitle, readOnly, add
                   <Conditional show={!readOnly}>
                     <TableCell align='right'>
                       <IconButton aria-label="Edit" onClick={() => {editAction(item)}}><EditIcon/></IconButton>
-                      <IconButton aria-label="Delete" onClick={() => {setDel(idx)}}><DeleteIcon/></IconButton>
+                      <IconButton aria-label="Delete" onClick={() => {setDel(item._id)}}><DeleteIcon/></IconButton>
                     </TableCell>
                   </Conditional>
                 </TableRow>
             );
             })}
           </Conditional>
-          <Conditional show={items.length == 0}>
+          <Conditional show={filteredItems.length == 0}>
             <TableRow>
               <TableCell colSpan={readOnly ? colSpec.length : colSpec.length + 1}>No entries</TableCell>
             </TableRow>

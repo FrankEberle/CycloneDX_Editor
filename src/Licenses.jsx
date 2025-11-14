@@ -12,10 +12,13 @@ import Collapse from '@mui/material/Collapse';
 import * as CycloneDX from './cyclonedx';
 import Properties from './Properties';
 import EditTable from './EditTable';
+import ConfigContext from './ConfigContext';
+import CustomProperies from './CustomProperties';
 
 
 function LicenseEditDialog({license, saveAction, closeAction}) {
   const [warnText, setWarnText] = React.useState("");
+  const config = React.useContext(ConfigContext);
 
   React.useEffect(() => {
     setWarnText("");
@@ -23,26 +26,39 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
   
 
   function formSubmit(event) {
-    console.log("debug1");
     event.preventDefault();
     event.stopPropagation();
     const formData = new FormData(event.currentTarget);
+    // Only license ID or license name is allowed
     if (formData.get("name") != "" && formData.get("id") != "-") {
       setWarnText("Name and ID are mutual exclusive.");
       return;
     }
+    // Either license name or license ID is required
     if (formData.get("name") == "" && formData.get("id") == "-") {
       setWarnText("Name or ID is requird.");
       return;
     }
+    // Prepare result data
     const data = {
-      "_id": license["_id"],
-      "license": {
-        ...license.license,
-        ...Object.fromEntries(formData.entries()),
-        "properties": license.license.properties
+      "_id": license["_id"], // copy old internal _id
+      "license": { 
+        ...license.license, // copy old license object
       },
     };
+    // Copy form data into result data
+    formData.entries().forEach(([key, value]) => {
+      // Check if form data represent custom property
+      if (CycloneDX.isCustomProp(key)) {
+        // Yes, store data into properties array
+        CycloneDX.storeCustomProp(data.license.properties, key, value);
+      } else {
+        // No, copy directly into license object
+        data["license"][key] = value;
+      }
+    });
+    // No license ID selected in the ID dropdown is repesented by "-".
+    // If ID contains "-" remove the entire field
     if (data.license.id == "-") {
       delete data.license.id;
     }
@@ -56,6 +72,10 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
 
   if (license === undefined) {
     return <></>
+  }
+
+  if (license.license["properties"] === undefined) {
+    license.license["properties"] = Array();
   }
 
   return (
@@ -107,10 +127,16 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
             size='small'
             defaultValue={getLicValue("url", "")}
           />
+          { config.licenseProperties.length > 0 &&
+            <CustomProperies
+              obj={license.license}
+              propertiesDef={config.licenseProperties}
+            />
+          }
           <Properties
             form_id="license"
-            properties={getLicValue("properties", Array())}
-            
+            filter={config.licenseProperties.map((p) => {return p.name})}
+            properties={license.license.properties}
           />
         </Stack>
       </form>
@@ -135,6 +161,7 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
 export default function Licenses({licenses, noTitle, readOnly}) {
   const [licensesList, setLicensesList] = React.useState([]);
   const [editLic, setEditLic] = React.useState(undefined);
+  const config = React.useContext(ConfigContext);
 
   React.useEffect(() => {
     setLicensesList(licenses);
@@ -153,6 +180,39 @@ export default function Licenses({licenses, noTitle, readOnly}) {
     setLicensesList([...licenses]);
   }
 
+  const colSpec = Array(
+    {
+      label: "ID / Name",
+      getter: (license) => {
+        if (license.license["name"] !== undefined && license.license.name != "")
+          return license.license.name;
+        else
+          return license.license.id
+      },
+      maxWidth: 200
+    },
+    {
+      label: "URL",
+      getter: (license) => {return license.license["url"]},
+    },
+  );
+  config.licenseProperties.forEach((lp) => {
+    if (lp["list"] === true) {
+      colSpec.push({
+        "label": lp.label,
+        "getter": (license) => {
+          const props = license.license.properties;
+          for (let i = 0; i < props.length; i++) {
+            if (props[i]["name"] == lp["name"]) {
+              return props[i]["value"];
+            }
+          }
+        }
+      })
+    }
+
+  });
+
   return (
     <>
       <LicenseEditDialog
@@ -165,31 +225,14 @@ export default function Licenses({licenses, noTitle, readOnly}) {
         title={['License', 'Licenses']}
         noTitle={noTitle}
         readOnly={readOnly}
-        colSpec={
-          [
-            {
-              label: "ID / Name",
-              getter: (license) => {
-                if (license.license["name"] !== undefined && license.license.name != "")
-                  return license.license.name;
-                else
-                  return license.license.id
-              },
-              maxWidth: 200
-            },
-            {
-              label: "URL",
-              getter: (license) => {return license.license["url"]},
-            },
-          ]
-        }
+        colSpec={colSpec}
         items={licensesList}
         deleteAction={(idx) => {
           licenses.splice(idx, 1);
           setLicensesList([...licenses]);
         }}
         addAction={() => {setEditLic({license: {}})}}
-        editAction={(license) => {setEditLic(license)}}
+        editAction={(license) => {setEditLic(CycloneDX.deepCopy(license))}}
       />    
     </>
   );

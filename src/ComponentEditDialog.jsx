@@ -21,21 +21,9 @@ export default function ComponentEditDialog({component, saveAction, closeAction}
     event.preventDefault();
     event.stopPropagation();
     const formData = new FormData(event.currentTarget);
-    formData.entries().forEach(([key, value]) => {
-        const keyParts = key.split(".");
-        let target = component;
-        for (let i = 0; i < keyParts.length -1; i++) {
-          if (target[keyParts[i]] === undefined) {
-            target[keyParts[i]] = {}
-          }
-          target = target[keyParts[i]];
-        }
-        target[keyParts[keyParts.length - 1]] = value;
-    });
-    console.log("Submit %o", component);
+    CycloneDX.formDataCopy(component, formData);
     saveAction();
   }
-
 
   return (
     <Dialog

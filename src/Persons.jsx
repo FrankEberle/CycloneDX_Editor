@@ -21,7 +21,6 @@ function PersonEditDialog({person, title, saveAction, closeAction}) {
     event.preventDefault();
     event.stopPropagation();
     const formData = Object.fromEntries(new FormData(event.currentTarget).entries());
-    console.log(formData);
     if (formData.name == "" && formData.email == "" && formData.phone == "") {
       setErrMsg("Please fill in at least one field.");
       return;

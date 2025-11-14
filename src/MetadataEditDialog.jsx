@@ -1,4 +1,3 @@
-import * as React from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -9,6 +8,7 @@ import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 
 import MetadataEdit from './MetadataEdit';
+import * as CycloneDX from './cyclonedx';
 import { useFormValidate } from './hooks';
 
 
@@ -22,18 +22,7 @@ export default function MetadataEditDialog({metadata, open, saveAction, closeAct
     event.preventDefault();
     event.stopPropagation();
     if (validate()) {
-      const formData = new FormData(event.currentTarget);
-      formData.entries().forEach(([key, value]) => {
-          const keyParts = key.split(".");
-          let target = metadata;
-          for (let i = 0; i < keyParts.length -1; i++) {
-            if (target[keyParts[i]] === undefined) {
-              target[keyParts[i]] = {}
-            }
-            target = target[keyParts[i]];
-          }
-          target[keyParts[keyParts.length - 1]] = value;
-      });
+      CycloneDX.formDataCopy(metadata, new FormData(event.currentTarget));
       saveAction();
     }
   }
