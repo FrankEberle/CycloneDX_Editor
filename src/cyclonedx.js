@@ -314,6 +314,23 @@ function emptyBom() {
             "name": "de:frank-eberle:3rdPartyType",
             "value": "internal"
           },
+          {
+            "name": "de:frank-eberle:orderNumber1",
+            "value": "on1"
+          },
+          {
+            "name": "de:frank-eberle:productName1",
+            "value": "pn1"
+          },
+          {
+            "name": "de:frank-eberle:orderNumber2",
+            "value": "on2"
+          },
+          {
+            "name": "de:frank-eberle:productName2",
+            "value": "pn2"
+          }
+
         ],
         licenses: [
           {
@@ -427,10 +444,10 @@ function formDataCopy(targetObj, formData) {
             }
           }
           if (! found) {
-            target["properties"].push({
+            target["properties"].push(prepareProperty({
               "name": lastKey,
               "value": value
-            })
+            }));
           }
         } else {
           target[lastKey] = value;
