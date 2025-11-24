@@ -18,7 +18,7 @@ import SaveDialog from './SaveDialog';
 import * as CycloneDX from './cyclonedx';
 import ConfigContext from './ConfigContext';
 
-import { Alert, Snackbar } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 
 
 function loadTextFile() {
@@ -62,10 +62,13 @@ async function loadConfig() {
   if (config["licenseProperties"] === undefined) {
     config["licenseProperties"] = Array();
   }
+  if (config["metaComponentProperties"] === undefined) {
+    config["metaComponentProperties"] = Array();
+  }
   return config;
 }
 
-async function loadBom(setBom) {
+async function loadBom(setBom, setErr) {
   const text = await loadTextFile();
   if (text === null) {
     return;
@@ -75,7 +78,7 @@ async function loadBom(setBom) {
     bom = JSON.parse(text);
     await CycloneDX.validateBom(bom);
   } catch (error) {
-    console.log("Error: " + error.name + " / " + error.message);
+    setErr("Failed to load BOM: " + error.name + " / " + error.message);
     return;
   }
   setBom(bom);
@@ -102,6 +105,7 @@ function App() {
   const [view, setView] = React.useState('metadata');
   const [showSaveDialog, setShowSaveDialog] = React.useState(false);
   const [config, setConfig] = React.useState(null);
+  const [err, setErr] = React.useState(null);
 
   React.useEffect(() => {
     loadConfig().then((c) => {
@@ -120,6 +124,10 @@ function App() {
     setBom(CycloneDX.emptyBom());
   }
 
+  function showErr(text) {
+    setErr(text);
+  }
+
   const burgerMenuItems = [
     [
       {
@@ -130,7 +138,7 @@ function App() {
       {
         label: "Load",
         icon: <FolderOpenIcon/>,
-        action: () => loadBom(bomLoaded),
+        action: () => loadBom(bomLoaded, showErr),
       },
       {
         label: "Save",
@@ -164,6 +172,28 @@ function App() {
           saveAction={(data) => {saveBom(bom, data.filename)}}
           closeAction={() => {setShowSaveDialog(false)}}
         />
+        <Dialog
+          open={err != null}
+          maxWidth={'sm'}
+        >
+          <DialogTitle sx={{color: 'error.main'}}>
+              Error
+          </DialogTitle>
+          <DialogContent sx={{minWidth: '500px'}}>
+            <Typography>
+              {err}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => setErr(null)}
+              color='error'
+              variant='contained'
+            >
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
         <Box sx={{display: "none"}}><input type="file" id="__loadFileBtn"/></Box>
         <Box
           sx={{ 
@@ -181,12 +211,6 @@ function App() {
               </Typography>
             </Toolbar>
           </AppBar>
-          <Alert
-            sx={{width: '100%'}}
-            severity='warning'
-          >
-            Failed to load bom.
-          </Alert>
 
           <MetadataView
             show={view == "metadata"}
