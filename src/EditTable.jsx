@@ -17,7 +17,7 @@ import YesNoDialog from './YesNoDialog';
 import { Conditional } from './helper';
 
 
-export default function EditTable({items, title, colSpec, noTitle, readOnly, addAction, editAction, deleteAction, filter, filterCol}) {
+export default function EditTable({items, title, colSpec, noTitle, noTopMargin, readOnly, addAction, editAction, deleteAction, filter, filterCol}) {
   /*
   {
     label: "",
@@ -62,7 +62,7 @@ export default function EditTable({items, title, colSpec, noTitle, readOnly, add
           setDel(undefined);
         }}
       />
-      <TableContainer sx={{mt: noTitle ? 0 : 3}}>
+      <TableContainer sx={{mt: noTitle || noTopMargin ? 0 : 3}}>
         <Table size='small' sx={{tableLayout: 'fixed'}}>
           <TableHead>
             <Conditional show={!noTitle}>

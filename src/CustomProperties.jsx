@@ -182,6 +182,7 @@ function TupleTable({config, obj, readOnly}) {
       />
       <EditTable
         title={config.label}
+        noTopMargin={true}
         items={tuples}
         readOnly={readOnly}
         colSpec={config.fields.map((f) => {

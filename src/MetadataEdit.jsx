@@ -7,9 +7,12 @@ import CeTextField from './CeTextField';
 import CeDropdownField from './CeDropdownField';
 import Manufacturer from './Manufacturer';
 import Persons from './Persons';
+import CustomProperies from './CustomProperties';
+import ConfigContext from './ConfigContext';
 import * as CycloneDX from './cyclonedx';
 
 export default function MetadataEdit({metadata, readOnly, register}) {
+  const config = React.useContext(ConfigContext);
 
   if (register === undefined) {
     register = () => {};
@@ -46,6 +49,11 @@ export default function MetadataEdit({metadata, readOnly, register}) {
               label="Version"
               name="component.version"
               defaultValue={CycloneDX.getValue(metadata, 'component.version', '')}
+              readOnly={readOnly}
+            />
+            <CustomProperies
+              obj={metadata}
+              propertiesDef={config.metaComponentProperties}
               readOnly={readOnly}
             />
           </Stack>
