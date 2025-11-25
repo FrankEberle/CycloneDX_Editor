@@ -1,8 +1,9 @@
 import React from 'react';
 import TextField from '@mui/material/TextField';
 
-export default function CeTextField({label, name, defaultValue, required, readOnly, autoFocus, ref, regex, rows}) {
+export default function CeTextField({label, name, defaultValue, required, readOnly, autoFocus, ref, regex, errText, rows, parentRef}) {
   const [isValid, setIsValid] = React.useState(true);
+  const [helperText, setHelperText] = React.useState(undefined);
   const inputRef = React.useRef(null);
   readOnly = readOnly !== undefined ? readOnly : false;
   required = required !== undefined ? required : false;
@@ -13,18 +14,29 @@ export default function CeTextField({label, name, defaultValue, required, readOn
     return {
       validate: () => {
         let result = true;
+        if (required && inputRef.current.value == "") {
+          setHelperText("Input required");
+          result = false;
+        }
         if (regex !== undefined) {
           if ((inputRef.current.value != "") && (!regex.test(inputRef.current.value))) {
+            setHelperText(errText);
             result = false;
           }
         }
         setIsValid(result);
+        if (! result) {
+          if (parentRef !== undefined) {
+            parentRef.current.showFailedValidation();
+          }
+        }
         return result;
       }
     };
   }, []);
 
   function onChange() {
+    setHelperText(undefined);
     setIsValid(true);
   }
 
@@ -51,10 +63,8 @@ export default function CeTextField({label, name, defaultValue, required, readOn
   return (
     <TextField
         size='small'
-        label={label}
+        label={label + (required ? " *" : "")}
         name={name}
-        required={required}
-        pattern="abc.*"
         defaultValue={defaultValue}
         autoFocus={autoFocus}
         error={!isValid}
@@ -62,6 +72,7 @@ export default function CeTextField({label, name, defaultValue, required, readOn
         onChange={onChange}
         multiline={rows > 1}
         rows={rows}
+        helperText={helperText}
         slotProps={{
             input: {
                 readOnly: readOnly,

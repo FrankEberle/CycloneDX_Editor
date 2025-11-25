@@ -13,6 +13,8 @@ import * as CycloneDX from './cyclonedx';
 
 export default function MetadataEdit({metadata, readOnly, register}) {
   const config = React.useContext(ConfigContext);
+  const compAccRef = React.useRef();
+  const miscAccRef = React.useRef();
 
   if (register === undefined) {
     register = () => {};
@@ -23,6 +25,7 @@ export default function MetadataEdit({metadata, readOnly, register}) {
       <CompAccordion
         title={"Component"}
         defaultExpanded={true}
+        ref={compAccRef}
       >
         <FormControl
           fullWidth
@@ -30,8 +33,10 @@ export default function MetadataEdit({metadata, readOnly, register}) {
           <Stack spacing={2}>
             <CeTextField
               label="Name"
+              parentRef={compAccRef}
               name="component.name"
               defaultValue={CycloneDX.getValue(metadata, 'component.name', '')}
+              {...register("component.name")}
               required={true}
               readOnly={readOnly}
               autoFocus={true}
@@ -39,6 +44,8 @@ export default function MetadataEdit({metadata, readOnly, register}) {
             <CeDropdownField
               label="Type"
               name="component.type"
+              parentRef={compAccRef}
+              {...register("component.type")}
               required={true}
               readOnly={readOnly}
               defaultValue={CycloneDX.getValue(metadata, 'component.type', '')}
@@ -61,6 +68,7 @@ export default function MetadataEdit({metadata, readOnly, register}) {
       </CompAccordion>      
       <CompAccordion
         title={"Miscellaneous"}
+        ref={miscAccRef}
       >
         <FormControl
           fullWidth
@@ -69,10 +77,12 @@ export default function MetadataEdit({metadata, readOnly, register}) {
             <CeTextField
               label="Timestamp"
               name="timestamp"
+              parentRef={miscAccRef}
               readOnly={readOnly}
               defaultValue={CycloneDX.getValue(metadata, 'timestamp', '')}
               {...register("timestamp")}
               regex={CycloneDX.formatRegEx("date-time")}
+              errText="Invalid timestamp format"
             />
           </Stack>
         </FormControl>

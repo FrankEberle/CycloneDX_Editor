@@ -6,9 +6,28 @@ import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 
-export default function CompAccordion({title, id, defaultExpanded, children}) {
+export default function CompAccordion({title, id, defaultExpanded, children, ref}) {
+  const [expanded, setExpanded] = React.useState(defaultExpanded === true ? true : false);
+
+  React.useImperativeHandle(ref, () => {
+    return {
+      showFailedValidation: () => {
+        setExpanded(true);
+      }
+    };
+  }, []);
+
+  function handleChange(event, isExpanded) {
+    setExpanded(isExpanded);
+  };
+
   return (
-    <Accordion defaultExpanded={defaultExpanded} sx={{width: '100%'}}>
+    <Accordion
+      
+      sx={{width: '100%'}}
+      expanded={expanded}
+      onChange={handleChange}
+    >
       <AccordionSummary
         expandIcon={<ExpandMoreIcon />}
         aria-controls={id+"-content"}
