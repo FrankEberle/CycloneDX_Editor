@@ -10,9 +10,12 @@ import CloseIcon from '@mui/icons-material/Close';
 
 import ComponentEdit from './ComponentEdit';
 import * as CycloneDX from './cyclonedx';
+import { useFormValidate } from './hooks';
 
 
 export default function ComponentEditDialog({component, saveAction, closeAction}) {
+  const {register, validate} = useFormValidate();
+
   if (component === undefined) {
     return <></>;
   }
@@ -20,9 +23,11 @@ export default function ComponentEditDialog({component, saveAction, closeAction}
   function onSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
-    const formData = new FormData(event.currentTarget);
-    CycloneDX.formDataCopy(component, formData);
-    saveAction();
+    if (validate()) {
+      const formData = new FormData(event.currentTarget);
+      CycloneDX.formDataCopy(component, formData);
+      saveAction();
+    }
   }
 
   return (
@@ -53,6 +58,7 @@ export default function ComponentEditDialog({component, saveAction, closeAction}
           <form id="component-edit-form" onSubmit={onSubmit}>
             <ComponentEdit
               component={component}
+              register={register}
             />
           </form>
         </DialogContent>

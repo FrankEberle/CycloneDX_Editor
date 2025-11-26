@@ -6,13 +6,12 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Alert from '@mui/material/Alert';
-import Collapse from '@mui/material/Collapse';
 import Box from '@mui/material/Box';
 
 import CeTextField from './CeTextField';
 import CeDropdownField from './CeDropdownField';
 import EditTable from './EditTable';
+import { useFormValidate } from './hooks';
 import * as CycloneDX from './cyclonedx';
 
 
@@ -32,28 +31,22 @@ function getProp(obj, name, defaultValue) {
 
 
 function TupleEditDialog({config, obj, saveAction, closeAction}) {
-  const [warnText, setWarnText] = React.useState("");
-
-  /*
-  React.useEffect(() => {
-    setWarnText("");
-  }, [license]);
-  */
-  
+  const {register, validate} = useFormValidate();
 
   function formSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
-    const data = {
-      _id: obj["_id"]
+    if (validate()) {
+      const data = {
+        _id: obj["_id"]
+      }
+      const formData = new FormData(event.currentTarget);
+      formData.entries().forEach(([key, value]) => {
+        data[key.substring(7)] = value;
+      });
+      saveAction(data);
+      closeAction();
     }
-    const formData = new FormData(event.currentTarget);
-    formData.entries().forEach(([key, value]) => {
-      data[key.substring(7)] = value;
-    });
-
-    saveAction(data);
-    closeAction();
   }
 
   if (obj === undefined) {
@@ -69,12 +62,10 @@ function TupleEditDialog({config, obj, saveAction, closeAction}) {
     >
     <DialogTitle>{obj["_id"] === undefined ? "New" : "Edit"} {config.label[0]}</DialogTitle>
     <DialogContent>
-      <Collapse in={warnText != ""}>
-        <Alert severity="warning" variant='outlined'>{warnText}</Alert>
-      </Collapse>
       <Box sx={{mt: 1}}>
         <form id="tuple-form" onSubmit={formSubmit}>
           <CustomProperies
+            register={register}
             obj={obj}
             propertiesDef={config.fields}
           />
@@ -222,8 +213,10 @@ function TupleTable({config, obj, readOnly}) {
 }
 
 
-export default function CustomProperies({obj, propertiesDef, readOnly}) {
-
+export default function CustomProperies({obj, propertiesDef, readOnly, register, parentRef}) {
+  if (register === undefined) {
+    register = () => {};
+  }
   return (
     <FormControl
       size='small'
@@ -231,9 +224,12 @@ export default function CustomProperies({obj, propertiesDef, readOnly}) {
     >
       <Stack spacing={2}>
         { propertiesDef.map((p) => {
+          const name = "__prop_" + p.name; 
           if (p.type == "enum") {
             return (
               <CeDropdownField
+                {...register(name)}
+                parentRef={parentRef}
                 key={p.name}
                 label={p.label}
                 name={"__prop_" + p.name}
@@ -247,6 +243,8 @@ export default function CustomProperies({obj, propertiesDef, readOnly}) {
           } else if (p.type == "text" && p["multiline"] !== true) {
             return (
               <CeTextField
+                {...register(name)}
+                parentRef={parentRef}
                 key={p.name}
                 label={p.label}
                 name={"__prop_" + p.name}
@@ -258,6 +256,8 @@ export default function CustomProperies({obj, propertiesDef, readOnly}) {
           } else if (p.type == "text" && p["multiline"] === true) {
             return (
               <CeTextField
+                {...register(name)}
+                parentRef={parentRef}
                 key={p.name}
                 label={p.label}
                 name={"__prop_" + p.name}

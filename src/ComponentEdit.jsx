@@ -14,9 +14,15 @@ import CeDropdownField from './CeDropdownField';
 import ConfigContext from './ConfigContext';
 import CustomProperies from './CustomProperties';
 
-export default function ComponentEdit({component, readOnly}) {
+export default function ComponentEdit({component, readOnly, register}) {
     const config = React.useContext(ConfigContext);
+    const identAccRef = React.useRef();
+    const customAccRef = React.useRef();
     const typeValues = CycloneDX.getComponentTypes();
+
+    if (register === undefined) {
+        register = () => {};
+    }
 
     if (readOnly === undefined) readOnly = false;
     if (component == null) {
@@ -28,6 +34,7 @@ export default function ComponentEdit({component, readOnly}) {
             defaultExpanded={true}
             id="identification-accordion"
             title="Identification"
+            ref={identAccRef}
         >
             <FormControl
                 size='small'
@@ -37,6 +44,8 @@ export default function ComponentEdit({component, readOnly}) {
                     <CeTextField
                         label='Name'
                         name='name'
+                        {...register("name")}
+                        parentRef={identAccRef}
                         required={true}
                         readOnly={readOnly}
                         autoFocus={true}
@@ -123,11 +132,14 @@ export default function ComponentEdit({component, readOnly}) {
           <CompAccordion
               id="custom-accordion"
               title="Custom"
+              ref={customAccRef}
           >
                 <CustomProperies
                     obj={component}
                     propertiesDef={config.componentProperties}
                     readOnly={readOnly}
+                    register={register}
+                    parentRef={customAccRef}
                 />
           </CompAccordion>
         }

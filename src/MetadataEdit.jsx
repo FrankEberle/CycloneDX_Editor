@@ -62,6 +62,8 @@ export default function MetadataEdit({metadata, readOnly, register}) {
               obj={metadata}
               propertiesDef={config.metaComponentProperties}
               readOnly={readOnly}
+              register={register}
+              parentRef={compAccRef}
             />
           </Stack>
         </FormControl>
