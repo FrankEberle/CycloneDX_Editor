@@ -7,6 +7,7 @@ import Properties from './Properties';
 import Licenses from './Licenses';
 import ExternalReferences from './ExternalReferences';
 import Hashes from './Hashes';
+import PedigreePatches from './PedigreePatches';
 import CompAccordion from './CompAccordion';
 import Manufacturer from './Manufacturer';
 import CeTextField from './CeTextField';
@@ -117,6 +118,22 @@ export default function ComponentEdit({component, readOnly, register}) {
         >
             <Hashes hashes={component.hashes} noTitle={true} readOnly={readOnly}/>
         </CompAccordion>
+        <CompAccordion
+            id="pedigree-accordion"
+            title="Pedigree"
+        >
+            <Stack spacing={2}>
+                <CeTextField
+                    label="Notes"
+                    name="pedigree.notes"
+                    defaultValue={CycloneDX.getValue(component, "pedigree.notes", "")}
+                    maxRows={5}
+                    readOnly={readOnly}
+                />
+            </Stack>
+            <PedigreePatches patches={component.pedigree.patches} readOnly={readOnly} />
+        </CompAccordion>
+
         <CompAccordion
             id="properties-accordion"
             title="Properties"

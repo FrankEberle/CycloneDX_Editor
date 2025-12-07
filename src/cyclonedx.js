@@ -100,6 +100,16 @@ function getHashAlgo(version) {
   }
 }
 
+function getPatchTypes(version) {
+  if (version === undefined || version == "1.6") {
+    return [
+      "unofficial",
+      "monkey",
+      "backport",
+      "cherry-pick",
+    ];
+  }
+}
 
 function getSpdxIDs() {
   return spdx_schema.enum;
@@ -190,6 +200,33 @@ function preparePerson(p) {
   return p;
 }
 
+function preparePatchIssue(i) {
+  setIdIfUndefined(i);
+  return i;
+}
+
+function preparePatch(p) {
+  if (p === undefined) {
+    p = {}
+  } else {
+    setIdIfUndefined(p);
+  }
+  setIfUndefined(p, "diff", {url: ""});
+  setIfUndefined(p, "resolves", Array());
+  p.resolves.forEach((i) => {
+    preparePatchIssue(i);
+  });
+  return p;
+}
+
+function preparePedigree(p) {
+  setIfUndefined(p, "patches", Array());
+  p.patches.forEach((patch) => {
+    preparePatch(patch);
+  });
+  return p;
+}
+
 function prepareComponent(c, noID) {
     if (noID !== true) {
       c["_id"] = crypto.randomUUID();
@@ -202,6 +239,8 @@ function prepareComponent(c, noID) {
     c.externalReferences.forEach((r) => {prepareExtRef(r)})
     setIfUndefined(c, "hashes", Array());
     c.hashes.forEach((h) => {prepareHash(h)});
+    setIfUndefined(c, "pedigree", {});
+    preparePedigree(c.pedigree);
     return c;
 }
 
@@ -505,4 +544,6 @@ export {
   formDataCopy,
   isCustomProp,
   storeCustomProp,
+  getPatchTypes,
+  preparePatch,
 };
