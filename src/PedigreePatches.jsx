@@ -6,7 +6,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
 
 import * as CycloneDX from './cyclonedx';
 import EditTable from './EditTable';
@@ -59,7 +58,7 @@ function PedigreePatchEditDialog({patch, saveAction, closeAction}) {
             defaultValue={CycloneDX.getValue(patch, "diff.url")}
           />
           <PedigreeIssues
-            patch={patch}
+            issues={patch.resolves}
           />
         </Stack>
       </form>
@@ -111,7 +110,7 @@ export default function PedigreePatches({patches, noTitle, readOnly}) {
         readOnly={readOnly}
         items={patchList}
         addAction={() => {setEdit(CycloneDX.preparePatch())}}
-        editAction={(ref) => {setEdit(ref)}}
+        editAction={(ref) => {setEdit(CycloneDX.deepCopy(ref))}}
         deleteAction={(idx) => {
           patches.splice(idx, 1);
           setPatchList([...patches]);
@@ -126,7 +125,28 @@ export default function PedigreePatches({patches, noTitle, readOnly}) {
             {
               label: 'URL',
               getter: (p) => {return p.diff.url},
-            }
+            },
+            {
+              label: 'Resolves',
+              getter: (p) => {
+                let res = "";
+                p.resolves.forEach((i) => {
+                  let add = null;
+                  if (i["id"] !== undefined) {
+                    add = i.id;
+                  } else if (i["name"] !== undefined) {
+                    add = i.name;
+                  }
+                  if (add != null) {
+                    if (res != "") {
+                      res += ", ";
+                    }
+                    res += add;
+                  }
+                })
+                return res
+              }
+            },
           ]
         }
       />

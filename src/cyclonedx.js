@@ -111,6 +111,16 @@ function getPatchTypes(version) {
   }
 }
 
+function getPatchIssueTypes(version) {
+  if (version === undefined || version == "1.6") {
+    return [
+      "defect",
+      "enhancement",
+      "security",
+    ];
+  }
+}
+
 function getSpdxIDs() {
   return spdx_schema.enum;
 }
@@ -546,4 +556,6 @@ export {
   storeCustomProp,
   getPatchTypes,
   preparePatch,
+  preparePatchIssue,
+  getPatchIssueTypes
 };

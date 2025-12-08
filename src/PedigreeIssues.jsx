@@ -5,31 +5,32 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
-import Box from '@mui/material/Box';
-import { Typography } from '@mui/material';
 
 import * as CycloneDX from './cyclonedx';
 import EditTable from './EditTable';
 import CeDropdownField from './CeDropdownField'
 import CeTextField from './CeTextField';
+import { useFormValidate } from './hooks';
 
 
+function PedigreePatchEditDialog({issue, saveAction, closeAction}) {
+  const {register, validate} = useFormValidate();
 
-function PedigreePatchEditDialog({patch, saveAction, closeAction}) {
   function formSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
-    const formData = new FormData(event.currentTarget);
-    const data = {
-      ...patch,
-      ...Object.fromEntries(formData.entries()),
-    };
-    saveAction(data);
+    if (validate()) {
+      const formData = new FormData(event.currentTarget);
+      const data = {
+        ...issue,
+        ...Object.fromEntries(formData.entries()),
+      };
+      saveAction(data);
+    }
   }
 
-  if (patch === undefined) {
+  if (issue === undefined) {
     return <></>;
   }
   return (
@@ -39,31 +40,31 @@ function PedigreePatchEditDialog({patch, saveAction, closeAction}) {
       fullWidth={true}
       disableRestoreFocus
     >
-    <DialogTitle>{patch["_id"] === undefined ? "New" : "Edit"} Patch</DialogTitle>
+    <DialogTitle>{issue["_id"] === undefined ? "New" : "Edit"} Issue</DialogTitle>
     <DialogContent>
-      <form id="patch-form" onSubmit={formSubmit}>
+      <form id="patch-issue-form" onSubmit={formSubmit}>
         <Stack sx={{pt: 1}} spacing={2}>
           <CeDropdownField
+            {...register()}
             name="type"
             label="Type"
             required={true}
-            defaultValue={CycloneDX.getValue(patch, "type", "")}
+            defaultValue={CycloneDX.getValue(issue, "type", "")}
             emptyOpt={true}
-            options={CycloneDX.getPatchTypes()}
+            options={CycloneDX.getPatchIssueTypes()}
           />
           <CeTextField
-            name="diff.url"
-            label="Diff URL"
-            defaultValue={CycloneDX.getValue(patch, "diff.patch")}
+            name="id"
+            label="ID"
+            defaultValue={CycloneDX.getValue(issue, "id", "")}
           />
-          
         </Stack>
       </form>
     </DialogContent>
      <DialogActions>
           <Button
             type="submit"
-            form="patch-form"
+            form="patch-issue-form"
           >
             Save
           </Button>
@@ -78,28 +79,27 @@ function PedigreePatchEditDialog({patch, saveAction, closeAction}) {
 }
 
 
-export default function PedigreeIssues({patch, readOnly}) {
+export default function PedigreeIssues({issues, readOnly}) {
   const [edit, setEdit] = React.useState(undefined);
   const [issueList, setIssueList] = React.useState([]);
 
   React.useEffect(() => {
-    setIssueList(patch.resolves);
-  }, [patch]);
+    setIssueList(issues);
+  }, [issues]);
 
-  console.log("Patch %o", patch);
 
   return (
     <>
       <PedigreePatchEditDialog
-        patch={edit}
-        saveAction={(hash) => {
-          if (hash["_id"] === undefined) {
-            patches.push(CycloneDX.prepareHash(hash));
+        issue={edit}
+        saveAction={(issue) => {
+          if (issue["_id"] === undefined) {
+            issues.push(CycloneDX.preparePatchIssue(issue));
           } else {
-            CycloneDX.replaceArrayElem(patches, hash);
+            CycloneDX.replaceArrayElem(issues, issue);
           }
           setEdit(undefined);
-          setPatchList([...patches]);
+          setIssueList([...issues]);
         }}
         closeAction={() => {setEdit(undefined)}}
       />
@@ -110,8 +110,8 @@ export default function PedigreeIssues({patch, readOnly}) {
         addAction={() => {setEdit({})}}
         editAction={(ref) => {setEdit(ref)}}
         deleteAction={(idx) => {
-          patches.splice(idx, 1);
-          setPatchList([...patches]);
+          issues.splice(idx, 1);
+          setIssueList([...issues]);
         }}
         colSpec={
           [
