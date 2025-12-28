@@ -7,7 +7,7 @@ import MetadataEdit from './MetadataEdit';
 import MetadataEditDialog from './MetadataEditDialog';
 import * as CycloneDX from './cyclonedx';
 
-export default function MatadataView({metadata, show}) {
+export default function MatadataView({metadata, show, bom}) {
   const [meta, setMeta] = React.useState(metadata);
   const [edit, setEdit] = React.useState(undefined);
 
@@ -26,6 +26,7 @@ export default function MatadataView({metadata, show}) {
       />
       <MetadataEditDialog
         metadata={metadata}
+        bom={bom}
         open={edit !== undefined}
         saveAction={() => {
           setMeta({...metadata});
@@ -35,6 +36,7 @@ export default function MatadataView({metadata, show}) {
       />
       <MetadataEdit
         metadata={meta}
+        bom={bom}
         readOnly={true}
       />
     </Box>

@@ -9,9 +9,10 @@ import Manufacturer from './Manufacturer';
 import Persons from './Persons';
 import CustomProperies from './CustomProperties';
 import ConfigContext from './ConfigContext';
+import MultiSelect from './MultiSelect';
 import * as CycloneDX from './cyclonedx';
 
-export default function MetadataEdit({metadata, readOnly, register}) {
+export default function MetadataEdit({metadata, readOnly, register, bom}) {
   const config = React.useContext(ConfigContext);
   const compAccRef = React.useRef();
   const miscAccRef = React.useRef();
@@ -64,6 +65,13 @@ export default function MetadataEdit({metadata, readOnly, register}) {
               readOnly={readOnly}
               register={register}
               parentRef={compAccRef}
+            />
+            <MultiSelect
+                name="component._dependencies"
+                label="Dependencies"
+                readOnly={readOnly}
+                selected={CycloneDX.getValue(metadata, "component._dependencies", "")}
+                options={bom._flattenedComponents.map((c) => {return {key: c._id, name: c.name}})}
             />
           </Stack>
         </FormControl>

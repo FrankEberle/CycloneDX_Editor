@@ -111,6 +111,7 @@ export default function ComponentsView({show, bom}) {
   }, [bom]);
 
   function refreshTree() {
+    CycloneDX.prepareBom(bom);
     setComponentsList([...bom.components]);
   }
 
@@ -135,7 +136,7 @@ export default function ComponentsView({show, bom}) {
     });
     target.components.push(newCmp);
     setNewCmpOpen(false);
-    setComponentsList([...bom.components]);
+    refreshTree();
     setComponent(newCmp);
     treeApiRef.current.setItemSelection({
       itemId: newCmp._id,
@@ -207,6 +208,7 @@ export default function ComponentsView({show, bom}) {
       />
       <ComponentEditDialog
         component={editComponent}
+        bom={bom}
         saveAction={storeComponent}
         closeAction={() => setEditComponent(undefined)}
       />
@@ -264,6 +266,7 @@ export default function ComponentsView({show, bom}) {
       >
         <ComponentEdit
           component={component}
+          bom={bom}
           readOnly={true}
         />
       </Box>

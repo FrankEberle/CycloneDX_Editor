@@ -12,6 +12,7 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import './App.css';
 
 import DrawerMenu from './DrawerMenu';
+import GlobalDataView from './GlobalDataView';
 import ComponentsView from './ComponentsView';
 import MetadataView from './MetadataView';
 import SaveDialog from './SaveDialog';
@@ -86,8 +87,8 @@ async function loadBom(setBom, setErr) {
 
 function saveBom(bom, filename) {
   console.log("Save");
-  const bomCleaned = CycloneDX.cleanBom(JSON.parse(JSON.stringify(bom)));
-  const json = JSON.stringify(bomCleaned, null, "  ");
+  const bomFinalized = CycloneDX.finalizeBom(JSON.parse(JSON.stringify(bom)));
+  const json = JSON.stringify(bomFinalized, null, "  ");
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -103,6 +104,7 @@ function saveBom(bom, filename) {
 function App() {
   const [bom, setBom] = React.useState(CycloneDX.emptyBom());
   const [view, setView] = React.useState('metadata');
+  const [heading, setHeading] = React.useState('Metadata');
   const [showSaveDialog, setShowSaveDialog] = React.useState(false);
   const [config, setConfig] = React.useState(null);
   const [err, setErr] = React.useState(null);
@@ -148,14 +150,28 @@ function App() {
     ],
     [
       {
+        label: "Global Data",
+        icon: <GridViewIcon/>,
+        action: () => {
+          setView("global");
+          setHeading("Global Data");
+        },
+      },
+      {
         label: "Metadata",
         icon: <GridViewIcon/>,
-        action: () => setView("metadata"),
+        action: () => {
+          setView("metadata");
+          setHeading("Metadata");
+        },
       },
       {
         label: "Components",
         icon: <GridViewIcon/>,
-        action: () => setView("components"),
+        action: () => {
+          setView("components");
+          setHeading("Components");
+        },
       },
     ]
   ];
@@ -207,14 +223,18 @@ function App() {
             <Toolbar>
               <DrawerMenu options={burgerMenuItems}/>
               <Typography variant="h6" component="div">
-                CycloneDX Editor - {view.substring(0, 1).toUpperCase()+view.substring(1)}
+                CycloneDX Editor - {heading}
               </Typography>
             </Toolbar>
           </AppBar>
-
+          <GlobalDataView
+            show={view == "global"}
+            bom={bom}
+          />
           <MetadataView
             show={view == "metadata"}
             metadata={bom.metadata}
+            bom={bom}
           />
           <ComponentsView
             show={view == "components"}

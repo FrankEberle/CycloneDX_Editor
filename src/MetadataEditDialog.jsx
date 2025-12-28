@@ -12,7 +12,7 @@ import * as CycloneDX from './cyclonedx';
 import { useFormValidate } from './hooks';
 
 
-export default function MetadataEditDialog({metadata, open, saveAction, closeAction}) {
+export default function MetadataEditDialog({metadata, bom, open, saveAction, closeAction}) {
   const {register, validate} = useFormValidate();
   if (metadata === undefined) {
     return <></>;
@@ -56,6 +56,7 @@ export default function MetadataEditDialog({metadata, open, saveAction, closeAct
             <MetadataEdit
               register={register}
               metadata={metadata}
+              bom={bom}
             />
           </form>
         </DialogContent>

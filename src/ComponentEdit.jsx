@@ -14,8 +14,9 @@ import CeTextField from './CeTextField';
 import CeDropdownField from './CeDropdownField';
 import ConfigContext from './ConfigContext';
 import CustomProperies from './CustomProperties';
+import MultiSelect from './MultiSelect';
 
-export default function ComponentEdit({component, readOnly, register}) {
+export default function ComponentEdit({component, bom, readOnly, register}) {
     const config = React.useContext(ConfigContext);
     const identAccRef = React.useRef();
     const customAccRef = React.useRef();
@@ -143,6 +144,18 @@ export default function ComponentEdit({component, readOnly, register}) {
                 properties={component.properties}
                 filter={config.componentProperties.map((p) => {return p.name})}
                 noTitle={true} readOnly={readOnly}
+            />
+        </CompAccordion>
+        <CompAccordion
+            id="dependencies-accordion"
+            title="Dependencies"
+        >
+            <MultiSelect
+                name="_dependencies"
+                label="Components"
+                readOnly={readOnly}
+                selected={CycloneDX.getValue(component, "_dependencies", "")}
+                options={bom._flattenedComponents.map((c) => {return {key: c._id, name: c.name}})}
             />
         </CompAccordion>
         { config.componentProperties.length > 0 &&

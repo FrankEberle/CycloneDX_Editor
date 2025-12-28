@@ -265,6 +265,70 @@ function prepareMetadata(bom) {
   metadata.authors.forEach((a) => {preparePerson(a)})
 }
 
+function flattenComponents(components) {
+    const result = Array();
+
+    function process(components) {
+      console.log("process %o", components);
+      components.forEach((c) => {
+        result.push(c);
+        if (c["components"] !== undefined) {
+          process(c.components);
+        }
+      });
+    }
+
+    process(components);
+    return result;
+}
+
+function getCompByBomRef(bom, bomRef) {
+  for (const c of bom._flattenedComponents) {
+    if (c["bom-ref"] == bomRef) {
+      return c;
+    }
+  }
+  if ((bom["metadata"] !== undefined) && (bom["metadata"]["component"] !== undefined)) {
+    if (bom["metadata"]["component"]["bom-ref"] == bomRef) {
+      return bom["metadata"]["component"];
+    }
+  }
+  return undefined
+}
+
+function loadDependencies(bom) {
+  // dependencies defined?
+  if (bom["dependencies"] === undefined) return;
+  // yes, process each dependency
+  for (const d of bom.dependencies) {
+    // lookup referencing component
+    const component = getCompByBomRef(bom, d.ref);
+    if (component === undefined) {
+      // not found, ignore dependency
+      console.log("Warning: dependency 'ref' includes unknown bom-ref");
+      continue;
+    }
+    // create array containing IDs (_id) of referenced components
+    let dependencies = Array();
+    if (d["dependsOn"] !== undefined) {
+      // iterate over referenced components
+      for (let dependsOn of d["dependsOn"]) {
+        // lookup referenced component
+        const target = getCompByBomRef(bom, dependsOn);
+        if (target === undefined) {
+          // not found, ignore ...
+          console.log("Warning: dependency 'dependsOn' includes unknown ref");
+          continue
+        }
+        // add _id to array
+        dependencies.push(target["_id"]);
+      }
+    }
+    // convert array into string and store it in referencing component
+    component["_dependencies"] = dependencies.join(",");
+  };
+}
+
 function prepareBom(bom) {
   bom["_modified"] = false;
   setIfUndefined(bom, "components", Array());
@@ -273,6 +337,8 @@ function prepareBom(bom) {
     prepareComponent(c);
     return [true, undefined];
   });
+  bom._flattenedComponents = flattenComponents(bom.components);
+  loadDependencies(bom);
   return bom;
 }
 
@@ -311,9 +377,78 @@ function removeEmptyFields(o) {
   return o;
 }
 
-function cleanBom(bom) {
+function finalizeSingleDependency(component, bom, componentById) {
+  // check if dependencies are defined for components
+  if ((component["_dependencies"] !== undefined) && component["_dependencies"] != "") {
+    // dependencies defined
+    // search exsting entry in bom.dependencies for component
+    let dependency = null;
+    for (let i = 0; i < bom.dependencies.length; ++i) {
+      if (bom.dependencies[i].ref == component["bom-ref"]) {
+        dependency = bom.dependencies[i];
+        break;
+      }
+    }
+    if (dependency == null) {
+      console.log("no dependency");
+      dependency = {
+        "ref": component["bom-ref"]
+      }
+      bom.dependencies.push(dependency);
+    }
+    dependency["dependsOn"] = Array();
+    component._dependencies.split(",").forEach((d) => {
+      dependency.dependsOn.push(componentById[d]["bom-ref"]);
+    })
+    delete component._dependencies;
+  } else {
+    // dependencies not defined, check for dependencies element corresponding to component
+    for (let i = 0; i < bom.dependencies.length; ++i) {
+      if (bom.dependencies[i].ref == component["bom-ref"])  {
+        console.log("REMOVE existing");
+        bom.dependencies.splice(i, 1);
+        break;
+      }
+    }
+  }
+}
+
+function finalizeDependencies(bom) {
+  const componentById = {}
+  setIfUndefined(bom, "dependencies", Array());
+  // create dictionary of components & add create bom-ref if missing
+  bom._flattenedComponents.forEach(c => {
+    componentById[c._id] = c;
+      if ((c["bom-ref"] === undefined) || (c["bom-ref"] == "")) {
+        // not defined
+        c["bom-ref"] = crypto.randomUUID();
+      }
+  });
+  // Process bom.components
+  bom._flattenedComponents.forEach((c) => {
+    finalizeSingleDependency(c, bom, componentById);
+  });
+  // process bom.metadata.component
+  if (bom.metadata.component["bom-ref"] === undefined) {
+    bom.metadata.component["bom-ref"] = crypto.randomUUID();
+  }
+  finalizeSingleDependency(bom.metadata.component, bom, componentById);
+}
+
+function finalizeBom(bom) {
+  // _flattenedComponents is possibly outdated
+  bom._flattenedComponents = flattenComponents(bom.components);
+  finalizeDependencies(bom);
   delete bom._modified;
+  delete bom._flattenedComponents;
   removeEmptyFields(bom);
+  if ((bom["serialNumber"] === undefined) || bom.serialNumber == "") {
+    bom["serialNumber"] = "urn:uuid:" + crypto.randomUUID();
+  }
+  if ((bom["version"] === undefined) || bom.version == "") {
+    bom["version"] = 1;
+  }
+  bom["version"] = Number(bom["version"]);
   return bom;
 }
 
@@ -334,6 +469,8 @@ function emptyBom() {
   const bom = {
     bomFormat: "CycloneDX",
     specVersion :"1.6",
+    serialNumber: "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+    version: 1,
     components: [
       {
         name: "Foo",
@@ -412,7 +549,7 @@ function emptyBom() {
             hashes: [
               {
                 alg: "MD5",
-                content: "aMD5hash",
+                content: "68b329da9893e34099c7d8ad5cb9c940",
               }
             ]
           }
@@ -540,7 +677,7 @@ export {
   prepareProperty,
   prepareLicense,
   preparePerson,
-  cleanBom,
+  finalizeBom,
   deepCopy,
   getSpdxIDs,
   prepareExtRef,
