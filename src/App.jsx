@@ -48,7 +48,6 @@ async function loadConfig() {
   // https://react.dev/learn/passing-data-deeply-with-context
   const url = window.location + "/config.json";
   const req = await fetch(url);
-  console.log(req);
   let config;
   try {
     config = await req.json();
@@ -66,6 +65,38 @@ async function loadConfig() {
   if (config["metaComponentProperties"] === undefined) {
     config["metaComponentProperties"] = Array();
   }
+  let componentColorFunc = undefined;
+  if (config["componentColorFunc"] !== undefined) {
+    // helper functions avaliable inside componentColorFunc()
+    function hasProperty (c, name) { // eslint-disable-line no-unused-vars
+      for (let p of c.properties) {
+        if (p.name == name) return true;
+      }
+      return false;
+    };
+    //
+    function getProperty(c, name) { // eslint-disable-line no-unused-vars
+      for (let p of c.properties) {
+        if (p.name == name) return p.value;
+      }
+      return undefined;
+    }
+    //
+    try {
+      componentColorFunc = eval(config["componentColorFunc"]);
+      if (typeof componentColorFunc != "function") {
+        console.log("Config error, 'componentColorFunc' does not eval to a function");
+        componentColorFunc = undefined;
+      }
+    }
+    catch (err) {
+      console.log("Config error, failed to eval componentColorFunc(): %o", err);
+    }
+  }
+  if (componentColorFunc === undefined) {
+    componentColorFunc = () => {return undefined};
+  }
+  config["componentColorFunc"] = componentColorFunc;
   return config;
 }
 

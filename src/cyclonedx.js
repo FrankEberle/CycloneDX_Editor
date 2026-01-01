@@ -156,16 +156,6 @@ function foreachComponent(bom, func) {
   return res;
 }
 
-function componentLookup(bom, id) {
-  const res = foreachComponent(bom, (c) => {
-    if (c["_id"] === id) {
-      return [false, c];
-    }
-    return [true, undefined];
-  });
-  return res;
-}
-
 function setIdIfUndefined(obj) {
   if (obj["_id"] === undefined) {
     obj["_id"] = crypto.randomUUID();
@@ -269,7 +259,6 @@ function flattenComponents(components) {
     const result = Array();
 
     function process(components) {
-      console.log("process %o", components);
       components.forEach((c) => {
         result.push(c);
         if (c["components"] !== undefined) {
@@ -280,6 +269,27 @@ function flattenComponents(components) {
 
     process(components);
     return result;
+}
+
+function buildComponentLookupTable(bom) {
+  bom["_compById"] = new Map();
+
+  function process(components) {
+    components.forEach((c) => {
+      bom._compById.set(c._id, c);
+      if (c["components"] !== undefined) {
+        process(c.components);
+      }
+    });
+  }
+
+  process(bom.components);
+}
+
+function componentLookup(bom, id) {
+  let comp = undefined;
+  comp = bom._compById.get(id);
+  return comp;
 }
 
 function getCompByBomRef(bom, bomRef) {
@@ -338,6 +348,7 @@ function prepareBom(bom) {
     return [true, undefined];
   });
   bom._flattenedComponents = flattenComponents(bom.components);
+  buildComponentLookupTable(bom);
   loadDependencies(bom);
   return bom;
 }
@@ -390,7 +401,6 @@ function finalizeSingleDependency(component, bom, componentById) {
       }
     }
     if (dependency == null) {
-      console.log("no dependency");
       dependency = {
         "ref": component["bom-ref"]
       }
@@ -405,7 +415,6 @@ function finalizeSingleDependency(component, bom, componentById) {
     // dependencies not defined, check for dependencies element corresponding to component
     for (let i = 0; i < bom.dependencies.length; ++i) {
       if (bom.dependencies[i].ref == component["bom-ref"])  {
-        console.log("REMOVE existing");
         bom.dependencies.splice(i, 1);
         break;
       }

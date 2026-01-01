@@ -13,6 +13,7 @@ import NewComponentDialog from './NewComponentDialog';
 import ComponentEditDialog from './ComponentEditDialog';
 import ComponentEdit from './ComponentEdit';
 import YesNoDialog from './YesNoDialog';
+import ConfigContext from './ConfigContext';
 import * as CycloneDX from './cyclonedx';
 
 function treeViewGetItemId(component) {
@@ -91,6 +92,7 @@ function ComponentSpeedDial({addAction, editAction, deleteAction}) {
 }
 
 export default function ComponentsView({show, bom}) {
+  const config = React.useContext(ConfigContext);
   const [componentsList, setComponentsList] = React.useState(Array());
   const [component, setComponent] = React.useState(null);
   const [editComponent, setEditComponent] = React.useState(undefined);
@@ -103,10 +105,12 @@ export default function ComponentsView({show, bom}) {
     setComponentsList(bom.components);
     if (bom.components.length > 0) {
       setComponent(bom.components[0]);
-      treeApiRef.current.setItemSelection({
-        itemId: bom.components[0]._id,
-        shouldBeSelected: true,
-      });
+      if (treeApiRef.current !== undefined) {
+        treeApiRef.current.setItemSelection({
+          itemId: bom.components[0]._id,
+          shouldBeSelected: true,
+        });
+      }
     }
   }, [bom]);
 
@@ -166,12 +170,27 @@ export default function ComponentsView({show, bom}) {
     setConfirmDelOpen(false);
   }
 
+  function getColor(component) {
+    let color = undefined;
+    const foo = (c) => {
+
+      return config["componentColorFunc"](c);
+    }
+    try {
+      color = foo(component);
+    }
+    catch(err) {
+      console.log("Failed to get color: %o", err);
+    }
+    return color;
+  }
+
   function storeComponent() {
+    let refreshRequired = false;
     if (editComponent["_id"] === undefined) {
       bom["components"].push(CycloneDX.prepareComponent(editComponent));
-      refreshTree();
+      refreshRequired = true;
     } else {
-      let refreshRequired = false;
       CycloneDX.foreachComponent(bom, (c, a, idx) => {
         if (c["_id"] == editComponent["_id"]) {
           ["name", "version", "type"].forEach((field) => {
@@ -179,6 +198,13 @@ export default function ComponentsView({show, bom}) {
               refreshRequired = true;
             }
           });
+          let color = getColor(editComponent);
+          if (c["_color"] !== color) {
+            console.log("New color");
+            editComponent["_color"] = color;
+            refreshRequired = true;
+          }
+          console.log("COLOR %o", color);
           a.components[idx] = editComponent;
           setComponent(a.components[idx]);
           return [false, undefined];
@@ -186,9 +212,29 @@ export default function ComponentsView({show, bom}) {
           return [true, undefined];
         }
       });
-      if (refreshRequired) refreshTree();
     }
+    if (refreshRequired) refreshTree();
     setEditComponent(undefined);
+  }
+
+  function getItemColor(x) {
+    let color = "#000000";
+    for (const c of bom._flattenedComponents) {
+      if (c._id == x.itemId) {
+        if (! Object.hasOwn(c, "_color")) {
+          c["_color"] = getColor(c);
+        }
+        if (c["_color"] !== undefined) {
+          color = c._color;
+        }
+        break;
+      }
+    }
+    return color;
+  }
+
+  if (! show) {
+    return <></>;
   }
 
   return (
@@ -231,6 +277,13 @@ export default function ComponentsView({show, bom}) {
           apiRef={treeApiRef}
           sx={{alignItems: 'left'}}
           items={componentsList}
+          slotProps={{
+            item: (ownerState) => ({
+              style: {
+                color: getItemColor(ownerState)
+              }
+            })
+          }}
           getItemId={treeViewGetItemId}
           getItemLabel={treeViewGetItemLabel}
           getItemChildren={treeViewGetItemChildren}
@@ -238,10 +291,14 @@ export default function ComponentsView({show, bom}) {
           onItemFocus={(event, itemId) => {
             // Set item as selected when it is focused, this allows
             // to 'scroll' through the components by keyboard
+            // TODO: makes it slow for large BOMs, but it's more the rendering
+            // of the right frame
+            /*
             treeApiRef.current.setItemSelection({
               itemId: itemId,
               shouldBeSelected: true,
             });
+            */
           }}
           onItemSelectionToggle={(event, itemId, isSelected) => {
             if (!isSelected) {

@@ -101,7 +101,6 @@ function TupleTable({config, obj, readOnly}) {
     obj.properties.forEach((p) => {
       propsDict[p["name"]] = p["value"];
     });
-    console.log("propsDict %o", propsDict);
     for (let i = 0; i < maxIdx; ++i) {
       const tuple = {
         _id: String(i),
@@ -109,7 +108,6 @@ function TupleTable({config, obj, readOnly}) {
       let match = false;
       config.fields.forEach((f) => {
         const key = f.name + String(i + 1);
-        console.log("key %s", key);
         if (propsDict[key] !== undefined) {
           tuple[f.name] = propsDict[key];
           match = true;
@@ -197,7 +195,6 @@ function TupleTable({config, obj, readOnly}) {
           setEditTuple(edit);
         }}
         deleteAction={(idx) => {
-          console.log(idx);
           // Delete tuple from local list
           tuples.splice(idx, 1);
           // Delete tuple props from object
