@@ -47,7 +47,7 @@ export default function NewComponentDialog({open, askSub, okAction, cancelAction
                     }}
                 >
                     { ["", ...CycloneDX.getComponentTypes()].map((v) => (
-                        <option value={v}>{v}</option>
+                        <option key={v} value={v}>{v}</option>
                     ))}
                 </TextField>
             </form>

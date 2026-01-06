@@ -77,7 +77,7 @@ export default function EditTable({items, title, colSpec, noTitle, noTopMargin, 
                     sx["maxWidth"] = cs.maxWidth;
                   }
                   return (
-                  <TableCell sx={sx}>{cs.label}</TableCell>
+                  <TableCell key={"h_" + cs.label} sx={sx}>{cs.label}</TableCell>
                   );
                 }
               )}
@@ -100,9 +100,7 @@ export default function EditTable({items, title, colSpec, noTitle, noTopMargin, 
                         value = cs.getter(item);
                       }
                       return (
-                        <>
-                          <TableCell>{value}</TableCell>
-                        </>
+                        <TableCell key={cs.label + "_" + item._id}>{value}</TableCell>
                       );
                     })
                   }

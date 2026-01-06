@@ -26,7 +26,6 @@ export default function ComponentEditDialog({component, bom, saveAction, closeAc
     if (validate()) {
       const formData = new FormData(event.currentTarget);
       CycloneDX.formDataCopy(component, formData);
-      console.log("Save component: %o", component);
       saveAction();
     }
   }

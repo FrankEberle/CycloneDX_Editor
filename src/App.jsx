@@ -44,6 +44,24 @@ function loadTextFile() {
   return p;
 }
 
+// utils for functions defined in configuration
+const utils = {
+  hastProerty: (c, name) => {
+    for (let p of c.properties) {
+      if (p.name == name) return true;
+    }
+    return false;
+  },
+
+  getProperty: (c, name) => {
+    for (let p of c.properties) {
+      if (p.name == name) return p.value;
+    }
+    return undefined;
+  },
+}
+
+
 async function loadConfig() {
   // https://react.dev/learn/passing-data-deeply-with-context
   const url = window.location + "/config.json";
@@ -67,21 +85,6 @@ async function loadConfig() {
   }
   let componentColorFunc = undefined;
   if (config["componentColorFunc"] !== undefined) {
-    // helper functions avaliable inside componentColorFunc()
-    function hasProperty (c, name) { // eslint-disable-line no-unused-vars
-      for (let p of c.properties) {
-        if (p.name == name) return true;
-      }
-      return false;
-    };
-    //
-    function getProperty(c, name) { // eslint-disable-line no-unused-vars
-      for (let p of c.properties) {
-        if (p.name == name) return p.value;
-      }
-      return undefined;
-    }
-    //
     try {
       componentColorFunc = eval(config["componentColorFunc"]);
       if (typeof componentColorFunc != "function") {
@@ -97,6 +100,51 @@ async function loadConfig() {
     componentColorFunc = () => {return undefined};
   }
   config["componentColorFunc"] = componentColorFunc;
+  if (config["componentsTableColumns"] === undefined) {
+    config.componentsTableColumns = Array();
+  } else {
+    const columns = Array();
+    let i = -1;
+    for (let col of config.componentsTableColumns) {
+      i = i + 1;
+      const colDef = {}
+      if (col["headerName"] === undefined) {
+        console.log("Config error, componentsTableColumns[%d]: 'headerName' is missing", i);
+        continue;
+      }
+      colDef.headerName = col.headerName;
+      if (col["func"] !== undefined) {
+        if (col["field"] !== undefined) {
+          console.log("Config error, componentsTableColumns[%d]: 'field' and 'func' are mutual exclusive", i);
+          continue;
+        }
+        try {
+          colDef.func = eval(col.func);
+        }
+        catch (err) {
+          console.log("Config error, componentsTableColumns[%d]: failed to eval 'func'", i, err);
+          continue;
+        }
+        colDef.field = "_computed_func_" + String(columns.length);
+      } else if (col.field !== undefined) {
+        if (typeof(col.field) != "string") {
+          console.log("Config error, componentsTableColumns[%d]: 'field' has invalid type'", i);
+          continue;
+        }
+        if (col.field.includes(".")) {
+          colDef.field = "_computed_" + col.field;
+          colDef.func = (c) => {return CycloneDX.getValue(c, col.field)};
+        } else {
+          colDef.field = col.field;
+        }
+      } else {
+        console.log("Config error, componentsTableColumns[%d]: neither 'field' nor 'func' defined", i);
+        continue
+      }
+      columns.push(colDef);
+    }
+    config.componentsTableColumns = columns;
+  }
   return config;
 }
 
@@ -116,9 +164,16 @@ async function loadBom(setBom, setErr) {
   setBom(bom);
 }
 
-function saveBom(bom, filename) {
+async function saveBom(bom, filename, setErr) {
   console.log("Save");
   const bomFinalized = CycloneDX.finalizeBom(JSON.parse(JSON.stringify(bom)));
+  try {
+    await CycloneDX.validateBom(bomFinalized);
+  }
+  catch (error) {
+    setErr("Failed to save BOM: " + error.name + " / " + error.message);
+    return;
+  }
   const json = JSON.stringify(bomFinalized, null, "  ");
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -216,7 +271,7 @@ function App() {
       <>
         <SaveDialog
           open={showSaveDialog}
-          saveAction={(data) => {saveBom(bom, data.filename)}}
+          saveAction={(data) => {saveBom(bom, data.filename, showErr)}}
           closeAction={() => {setShowSaveDialog(false)}}
         />
         <Dialog

@@ -6,15 +6,20 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import EditIcon from '@mui/icons-material/Edit';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
+import GridViewIcon from '@mui/icons-material/GridView';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { useTreeViewApiRef} from '@mui/x-tree-view/hooks';
+import { DataGrid } from '@mui/x-data-grid';
 
 import NewComponentDialog from './NewComponentDialog';
 import ComponentEditDialog from './ComponentEditDialog';
 import ComponentEdit from './ComponentEdit';
 import YesNoDialog from './YesNoDialog';
 import ConfigContext from './ConfigContext';
+import { Conditional } from './helper';
 import * as CycloneDX from './cyclonedx';
+
+const defaultColor = '#000000';
 
 function treeViewGetItemId(component) {
   return component["_id"];
@@ -35,7 +40,7 @@ function treeViewGetItemChildren(component) {
 }
 
 
-function ComponentSpeedDial({addAction, editAction, deleteAction}) {
+function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchAction}) {
   const [isOpen, setIsOpen] = React.useState(false);
   return (
     <SpeedDial
@@ -86,9 +91,57 @@ function ComponentSpeedDial({addAction, editAction, deleteAction}) {
             deleteAction();
           }}
         />
+      <SpeedDialAction
+          key={'switchView'}
+          icon=<GridViewIcon/>
+          slotProps={{
+            tooltip: {
+              title: 'Switch View',
+            },
+          }}
+          onClick={() => {
+            setIsOpen(false);
+            viewSwitchAction();
+          }}
+        />
 
     </SpeedDial>
   );
+}
+
+function getComponentsTableColumns(config) {
+    const columns = [
+      {
+        field: "_level",
+        headerName: "Level",
+      },
+      {
+        field: "name",
+        headerName: "Name",
+        renderCell: (params) => {
+          return (<span style={{color: params.row._color}}>{params.value}</span>)
+        },
+      },
+      {
+        field: "type",
+        headerName: "Type",
+      },
+      {
+        field: "version",
+        headerName: "Version",
+      }
+    ];
+    config.componentsTableColumns.forEach((col) => {
+      const colDef = {
+        headerName: col.headerName,
+        field: col.field,
+      }
+      if (col["func"] !== undefined) {
+        colDef["valueGetter"] = (value, row) => {return col.func(row)};
+      }
+      columns.push(colDef);
+    });
+    return columns;
 }
 
 export default function ComponentsView({show, bom}) {
@@ -98,11 +151,22 @@ export default function ComponentsView({show, bom}) {
   const [editComponent, setEditComponent] = React.useState(undefined);
   const [newCmpOpen, setNewCmpOpen] = React.useState(false);
   const [confirmDelOpen, setConfirmDelOpen] = React.useState(false);
+  const [view, setView] = React.useState("table");
+  const [tableSelectionModel, setTableSelectionModel] = React.useState(undefined);
+  const [tableColumns, setTableColumns] = React.useState(undefined);
 
   const treeApiRef = useTreeViewApiRef();
 
+  if (tableColumns === undefined) {
+    setTableColumns(getComponentsTableColumns(config));
+  }
+
   React.useEffect(() => {
     setComponentsList(bom.components);
+    bom._flattenedComponents.forEach((c) => {
+      const color = getColor(c);
+      c._color = color === undefined ? defaultColor : color;
+    });
     if (bom.components.length > 0) {
       setComponent(bom.components[0]);
       if (treeApiRef.current !== undefined) {
@@ -113,10 +177,36 @@ export default function ComponentsView({show, bom}) {
       }
     }
   }, [bom]);
+  
 
-  function refreshTree() {
+  function switchView() {
+    if (view == "tree") {
+      setView("table");
+    } else {
+      setView("tree");
+    }
+  }
+
+  function updateBom(refreshTree) {
     CycloneDX.prepareBom(bom);
-    setComponentsList([...bom.components]);
+    /*
+    bom._flattenedComponents.forEach((component) => {
+        config.componentsTableColumns.forEach((column) => {
+          if (column.field.startsWith("_computed_")) {
+            try {
+              component[column.field] = column.func(component);
+            }
+            catch(err) {
+              console.log("Components table; error getting field '%s': %o", column.field, err);
+              component[column.field] = "";
+            }
+          }
+        });
+    });
+    */
+    if (refreshTree) {
+      setComponentsList([...bom.components]);
+    }
   }
 
   function newCmpDialogSave(formData) {
@@ -124,10 +214,12 @@ export default function ComponentsView({show, bom}) {
     const subCmp = formData.get("subComponent");
     if ( subCmp !== undefined && subCmp == "on") {
       target = component;
-      treeApiRef.current.setItemExpansion({
-        itemId: component._id,
-        shouldBeExpanded: true,
-      });
+      if (treeApiRef.current !== undefined) {
+        treeApiRef.current.setItemExpansion({
+          itemId: component._id,
+          shouldBeExpanded: true,
+        });
+      }
     } else {
       target = bom;
     }
@@ -138,14 +230,17 @@ export default function ComponentsView({show, bom}) {
       name: formData.get("name"),
       type: formData.get("type"),
     });
+    newCmp._color = getColor(newCmp);
     target.components.push(newCmp);
     setNewCmpOpen(false);
-    refreshTree();
+    updateBom(true);
     setComponent(newCmp);
-    treeApiRef.current.setItemSelection({
-      itemId: newCmp._id,
-      shouldBeSelected: true,
-    })
+    if (treeApiRef.current !== undefined) {
+      treeApiRef.current.setItemSelection({
+        itemId: newCmp._id,
+        shouldBeSelected: true,
+      })
+    }
   }
 
   function delComponent() {
@@ -156,13 +251,15 @@ export default function ComponentsView({show, bom}) {
       }
       return [true, undefined];
     });
-    refreshTree();
+    updateBom(true);
     if (bom.components.length > 0) {
       const selComp = bom.components[0];
-      treeApiRef.current.setItemSelection({
-        itemId: selComp._id,
-        shouldBeSelected: true,
-      });
+      if (treeApiRef.current !== undefined) {
+        treeApiRef.current.setItemSelection({
+          itemId: selComp._id,
+          shouldBeSelected: true,
+        });
+      }
       setComponent(selComp);
     } else {
       setComponent(undefined);
@@ -171,13 +268,9 @@ export default function ComponentsView({show, bom}) {
   }
 
   function getColor(component) {
-    let color = undefined;
-    const foo = (c) => {
-
-      return config["componentColorFunc"](c);
-    }
+    let color = defaultColor;
     try {
-      color = foo(component);
+      color = config["componentColorFunc"](component);
     }
     catch(err) {
       console.log("Failed to get color: %o", err);
@@ -200,11 +293,9 @@ export default function ComponentsView({show, bom}) {
           });
           let color = getColor(editComponent);
           if (c["_color"] !== color) {
-            console.log("New color");
             editComponent["_color"] = color;
             refreshRequired = true;
           }
-          console.log("COLOR %o", color);
           a.components[idx] = editComponent;
           setComponent(a.components[idx]);
           return [false, undefined];
@@ -213,22 +304,15 @@ export default function ComponentsView({show, bom}) {
         }
       });
     }
-    if (refreshRequired) refreshTree();
+    updateBom(refreshRequired);
     setEditComponent(undefined);
   }
 
   function getItemColor(x) {
-    let color = "#000000";
-    for (const c of bom._flattenedComponents) {
-      if (c._id == x.itemId) {
-        if (! Object.hasOwn(c, "_color")) {
-          c["_color"] = getColor(c);
-        }
-        if (c["_color"] !== undefined) {
-          color = c._color;
-        }
-        break;
-      }
+    let color = defaultColor;
+    const comp = CycloneDX.componentLookup(bom, x.itemId);
+    if (comp !== undefined) {
+      color = comp._color;
     }
     return color;
   }
@@ -264,69 +348,93 @@ export default function ComponentsView({show, bom}) {
           setEditComponent(CycloneDX.deepCopy(component));
         }}
         deleteAction={component === undefined ? undefined : () => {setConfirmDelOpen(true)}}
+        viewSwitchAction={switchView}
       />
-      <Box 
-        sx={{ 
-          width: '30%', 
-          borderRight: '1px solid grey', 
-          overflow: 'auto',
-          p: 2,
-        }}
-      >
-        <RichTreeView
-          apiRef={treeApiRef}
-          sx={{alignItems: 'left'}}
-          items={componentsList}
-          slotProps={{
-            item: (ownerState) => ({
-              style: {
-                color: getItemColor(ownerState)
+      <Conditional show={view == "tree"}>
+        <Box 
+          sx={{ 
+            width: '30%', 
+            borderRight: '1px solid grey', 
+            overflow: 'auto',
+            p: 2,
+          }}
+        >
+          <RichTreeView
+            apiRef={treeApiRef}
+            sx={{alignItems: 'left'}}
+            items={componentsList}
+            slotProps={{
+              item: (ownerState) => ({
+                style: {
+                  color: getItemColor(ownerState)
+                }
+              })
+            }}
+            getItemId={treeViewGetItemId}
+            getItemLabel={treeViewGetItemLabel}
+            getItemChildren={treeViewGetItemChildren}
+            expansionTrigger='iconContainer'
+            onItemFocus={(event, itemId) => {
+              // Set item as selected when it is focused, this allows
+              // to 'scroll' through the components by keyboard
+              // TODO: makes it slow for large BOMs, but it's more the rendering
+              // of the right frame
+              /*
+              treeApiRef.current.setItemSelection({
+                itemId: itemId,
+                shouldBeSelected: true,
+              });
+              */
+            }}
+            onItemSelectionToggle={(event, itemId, isSelected) => {
+              if (!isSelected) {
+                return;
               }
-            })
+              const c = CycloneDX.componentLookup(bom, itemId);
+              if (c !== undefined) {
+                setComponent(c);
+              } else {
+                console.log("Error: Component not found")
+              }
+            }}
+          />
+        </Box>
+        <Box
+          sx={{ 
+            width: '70%', 
+            overflow: 'auto',
+            p: 1,
+            m: 1,
           }}
-          getItemId={treeViewGetItemId}
-          getItemLabel={treeViewGetItemLabel}
-          getItemChildren={treeViewGetItemChildren}
-          expansionTrigger='iconContainer'
-          onItemFocus={(event, itemId) => {
-            // Set item as selected when it is focused, this allows
-            // to 'scroll' through the components by keyboard
-            // TODO: makes it slow for large BOMs, but it's more the rendering
-            // of the right frame
-            /*
-            treeApiRef.current.setItemSelection({
-              itemId: itemId,
-              shouldBeSelected: true,
+        >
+          <ComponentEdit
+            component={component}
+            bom={bom}
+            readOnly={true}
+          />
+        </Box>
+      </Conditional>
+       <Conditional show={view == "table"}>
+        <DataGrid
+          getRowId={(r) => {return r._id}}
+          rowSelectionModel={tableSelectionModel}
+          onRowSelectionModelChange={(newSelectionModel) => {
+            setTableSelectionModel(newSelectionModel);
+          }}
+          onRowClick={(params) => {setComponent(params.row)}}
+          onRowDoubleClick={(params) => {
+            setTableSelectionModel({
+              type: "include",
+              ids: new Set([params.id]),
             });
-            */
+            setComponent(params.row);
+            setEditComponent(CycloneDX.deepCopy(params.row));
           }}
-          onItemSelectionToggle={(event, itemId, isSelected) => {
-            if (!isSelected) {
-              return;
-            }
-            const c = CycloneDX.componentLookup(bom, itemId);
-            if (c !== undefined) {
-              setComponent(c);
-            } else {
-              console.log("Error: Component not found")
-            }
-          }}
+          columns={tableColumns}
+          rows={bom._flattenedComponents}
         />
-      </Box>
-      <Box
-        sx={{ 
-          width: '70%', 
-          overflow: 'auto',
-          p: 1,
-          m: 1,
-        }}
-      >
-        <ComponentEdit
-          component={component}
-          bom={bom}
-          readOnly={true}
-        />
-      </Box>
+
+       </Conditional>
     </Box>
   )
 }

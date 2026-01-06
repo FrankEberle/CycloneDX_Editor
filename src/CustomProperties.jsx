@@ -267,6 +267,7 @@ export default function CustomProperies({obj, propertiesDef, readOnly, register,
           } else if (p.type == "tuple") {
             return (
               <TupleTable
+                key={"tupleTable_" + p.label[0]}
                 config={p}
                 obj={obj}
                 readOnly={readOnly}

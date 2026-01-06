@@ -229,7 +229,7 @@ function preparePedigree(p) {
 
 function prepareComponent(c, noID) {
     if (noID !== true) {
-      c["_id"] = crypto.randomUUID();
+      setIdIfUndefined(c);
     }
     setIfUndefined(c, "properties", Array());
     c.properties.forEach((p) => {prepareProperty(p)})
@@ -258,16 +258,17 @@ function prepareMetadata(bom) {
 function flattenComponents(components) {
     const result = Array();
 
-    function process(components) {
+    function process(components, level) {
       components.forEach((c) => {
+        c["_level"] = level;
         result.push(c);
         if (c["components"] !== undefined) {
-          process(c.components);
+          process(c.components, level + 1);
         }
       });
     }
 
-    process(components);
+    process(components, 0);
     return result;
 }
 
@@ -449,6 +450,15 @@ function finalizeBom(bom) {
   bom._flattenedComponents = flattenComponents(bom.components);
   finalizeDependencies(bom);
   delete bom._modified;
+  // remove properties with name starting with underscore (e.g. _color, _computed) from components
+  bom._flattenedComponents.forEach((c) => {
+    Object.getOwnPropertyNames(c).forEach((p) => {
+      if (p.startsWith("_")) {
+        delete c[p];
+      }
+    });
+    delete c._color;
+  });
   delete bom._flattenedComponents;
   removeEmptyFields(bom);
   if ((bom["serialNumber"] === undefined) || bom.serialNumber == "") {
@@ -517,14 +527,6 @@ function emptyBom() {
             "name": "de:frank-eberle:productName1",
             "value": "pn1"
           },
-          {
-            "name": "de:frank-eberle:orderNumber2",
-            "value": "on2"
-          },
-          {
-            "name": "de:frank-eberle:productName2",
-            "value": "pn2"
-          }
 
         ],
         licenses: [
