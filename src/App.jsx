@@ -64,16 +64,18 @@ const utils = {
 
 async function loadConfig() {
   // https://react.dev/learn/passing-data-deeply-with-context
-  const url = window.location + "/config.json";
+  const url = window.location + "/config.js";
   const req = await fetch(url);
   let config;
   try {
-    config = await req.json();
+    const source = await req.text();
+    config = eval(source);
   } catch (error) {
     console.log("Failed to load config: %s", error);
     config = {
     }
   }
+  console.log(config);
   if (config["componentProperties"] === undefined) {
     config["componentProperties"] = Array();
   }
@@ -83,23 +85,9 @@ async function loadConfig() {
   if (config["metaComponentProperties"] === undefined) {
     config["metaComponentProperties"] = Array();
   }
-  let componentColorFunc = undefined;
-  if (config["componentColorFunc"] !== undefined) {
-    try {
-      componentColorFunc = eval(config["componentColorFunc"]);
-      if (typeof componentColorFunc != "function") {
-        console.log("Config error, 'componentColorFunc' does not eval to a function");
-        componentColorFunc = undefined;
-      }
-    }
-    catch (err) {
-      console.log("Config error, failed to eval componentColorFunc(): %o", err);
-    }
+  if (config["componentColorFunc"] === undefined) {
+    config["componentColorFunc"] = () => {return undefined};
   }
-  if (componentColorFunc === undefined) {
-    componentColorFunc = () => {return undefined};
-  }
-  config["componentColorFunc"] = componentColorFunc;
   if (config["componentsTableColumns"] === undefined) {
     config.componentsTableColumns = Array();
   } else {
@@ -118,13 +106,7 @@ async function loadConfig() {
           console.log("Config error, componentsTableColumns[%d]: 'field' and 'func' are mutual exclusive", i);
           continue;
         }
-        try {
-          colDef.func = eval(col.func);
-        }
-        catch (err) {
-          console.log("Config error, componentsTableColumns[%d]: failed to eval 'func'", i, err);
-          continue;
-        }
+        colDef.func = col.func;
         colDef.field = "_computed_func_" + String(columns.length);
       } else if (col.field !== undefined) {
         if (typeof(col.field) != "string") {
