@@ -60,6 +60,7 @@ const utils = {
     return undefined;
   },
 }
+window.CycloneDX = utils;
 
 
 async function loadConfig() {
