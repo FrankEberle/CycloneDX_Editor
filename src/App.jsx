@@ -65,18 +65,16 @@ window.CycloneDX = utils;
 
 async function loadConfig() {
   // https://react.dev/learn/passing-data-deeply-with-context
-  const url = window.location + "/config.js";
-  const req = await fetch(url);
   let config;
   try {
-    const source = await req.text();
-    config = eval(source);
-  } catch (error) {
-    console.log("Failed to load config: %s", error);
-    config = {
-    }
+    const config_file = "config";
+    const module = await import(/* @vite-ignore */ `./${config_file}.js`);
+    config = module.default;
   }
-  console.log(config);
+  catch (error) {
+    console.log("Failed to load configuration: %o", error);
+    config = {};
+  }
   if (config["componentProperties"] === undefined) {
     config["componentProperties"] = Array();
   }
@@ -104,8 +102,7 @@ async function loadConfig() {
       colDef.headerName = col.headerName;
       if (col["func"] !== undefined) {
         if (col["field"] !== undefined) {
-          console.log("Config error, componentsTableColumns[%d]: 'field' and 'func' are mutual exclusive", i);
-          continue;
+          console.log("Config warning, componentsTableColumns[%d]: 'field' and 'func' are mutual exclusive", i);
         }
         colDef.func = col.func;
         colDef.field = "_computed_func_" + String(columns.length);
