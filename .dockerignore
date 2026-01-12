@@ -1,0 +1,5 @@
+.git
+dist
+public/config*
+node_modules
+

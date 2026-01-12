@@ -1,0 +1,27 @@
+FROM node:25-bullseye AS build
+
+COPY . /build
+RUN \
+  cd /build; \
+  npm install; \
+  npm run build; \
+  true;
+
+FROM ubuntu:24.04
+
+RUN apt-get update;apt-get upgrade -y
+RUN apt-get install nginx -y
+
+RUN \
+  rm -rf /var/www/html/*; \
+  sed -i 's/^.*access_log.*$//' /etc/nginx/ngnix.conf; \
+  sed -i 's/^.*error_log.*$//' /etc/nginx/ngnix.conf; \
+  sed -i 's/listen 80/listen 8080/' /etc/nginx/sites-enabled/default; \
+  sed -i 's/listen [::]:80/listen [::]:8080/' /etc/nginx/sites-enabled/default; \
+  true
+
+COPY --from=build /build/dist/ /var/www/html
+
+EXPOSE 80/tcp
+
+ENTRYPOINT [ "/usr/sbin/nginx", "-g", "daemon off;" ]
