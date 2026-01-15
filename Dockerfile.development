@@ -1,0 +1,7 @@
+FROM node:25-bullseye AS build
+
+RUN \
+  mkdir /work; \
+  true;
+EXPOSE 5173/tcp  
+WORKDIR /work

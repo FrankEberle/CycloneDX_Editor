@@ -31,6 +31,27 @@ npm install
 npm run dev
 ```
 
+The repository contains the dockerfile Dockerfile.development to build a simple container
+for development purpose.
+
+The container image is build using the following commands:
+```
+cd CycloneDX_Editor
+docker build -f Dockerfile.development -t cyclonedx_editor_dev
+```
+
+The following commands are used to invoke the Vite development sever inside the container:
+```
+cd CycloneDX_Editor
+docker run --rm -t -i -p 5173:5173 -v ${PWD}:/work cyclonedx_editor_dev npm run dev -- --host
+```
+
+Use the following commands to build the software:
+```
+cd CycloneDX_Editor
+docker run --rm -t -v ${PWD}:/work cyclonedx_editor_dev npm run build
+```
+
 ## Configuration
 
 ```

@@ -22,6 +22,6 @@ RUN \
 
 COPY --from=build /build/dist/ /var/www/html
 
-EXPOSE 80/tcp
+EXPOSE 8080/tcp
 
 ENTRYPOINT [ "/usr/sbin/nginx", "-g", "daemon off;" ]
