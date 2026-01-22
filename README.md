@@ -52,12 +52,46 @@ cd CycloneDX_Editor
 docker run --rm -t -v ${PWD}:/work cyclonedx_editor_dev npm run build
 ```
 
-## Configuration
+### Custom Properties
+CycloneDX allows to store custom information as key/value pairs at various
+places via the *properties* array.
 
+Example:
+```
+{
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.6",
+    "metadata": {
+      "component": {
+        "properies": [
+          {
+            "name": "prop1",
+            "value": "value1"
+          },
+          {
+            "name": "prop2",
+            "value": "value2"
+          }
+        ]
+      }
+    }
+}
+```
+The CycloneDX Editor can be configured to present additional input fields to
+for entering custom data which is stored as properties.
+
+## Configuration
+The application can be configured via a Javascript file named *config.js*. The file
+must be located in the *src* subfolder in a development environment. In a production
+environment the file must be stored in the subfolder *assets*.
+
+The configuration file must export a single object providing the configuration options
+as the object's properties:
 ```
 export default {
 }
 ```
+
 
 ## Deployment
 
