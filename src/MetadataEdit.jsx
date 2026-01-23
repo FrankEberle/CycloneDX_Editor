@@ -24,7 +24,7 @@ import CeTextField from './CeTextField';
 import CeDropdownField from './CeDropdownField';
 import Manufacturer from './Manufacturer';
 import Persons from './Persons';
-import CustomProperies from './CustomProperties';
+import CustomData from './CustomData';
 import ConfigContext from './ConfigContext';
 import MultiSelect from './MultiSelect';
 import * as CycloneDX from './cyclonedx';
@@ -76,7 +76,7 @@ export default function MetadataEdit({metadata, readOnly, register, bom}) {
               defaultValue={CycloneDX.getValue(metadata, 'component.version', '')}
               readOnly={readOnly}
             />
-            <CustomProperies
+            <CustomData
               obj={metadata}
               propertiesDef={config.metaComponentProperties}
               readOnly={readOnly}

@@ -44,7 +44,7 @@ function getComponentTypes(version) {
           "cryptographic-asset",
       ];
   } else {
-      throw Error("Unecpected CycloneDX version");
+      throw Error("Unexpected CycloneDX version");
   }
 }
 
@@ -383,7 +383,7 @@ function removeEmptyFields(o) {
     }
     // Object
     if (typeof(o[key]) == "object") {
-      // Arry
+      // Array
       if (o[key].constructor.name == "Array") {
         // Invoke function for each string element
         for (let i = 0; i < o[key].length; ++i) {
@@ -410,7 +410,7 @@ function finalizeSingleDependency(component, bom, componentById) {
   // check if dependencies are defined for components
   if ((component["_dependencies"] !== undefined) && component["_dependencies"] != "") {
     // dependencies defined
-    // search exsting entry in bom.dependencies for component
+    // search existing entry in bom.dependencies for component
     let dependency = null;
     for (let i = 0; i < bom.dependencies.length; ++i) {
       if (bom.dependencies[i].ref == component["bom-ref"]) {
@@ -670,12 +670,12 @@ function formDataCopy(targetObj, formData) {
 }
 
 
-function isCustomProp(name) {
+function isCustomDataProp(name) {
   return name.startsWith("__prop_");
 }
 
 
-function storeCustomProp(properties, name, value) {
+function storeCustomDataProp(properties, name, value) {
   let found = false;
   name = name.substring(7)
   for (let i = 0; i < properties.length; i++) {
@@ -717,8 +717,8 @@ export {
   formatRegEx,
   validateBom,
   formDataCopy,
-  isCustomProp,
-  storeCustomProp,
+  isCustomDataProp,
+  storeCustomDataProp,
   getPatchTypes,
   preparePatch,
   preparePatchIssue,

@@ -30,7 +30,7 @@ import Manufacturer from './Manufacturer';
 import CeTextField from './CeTextField';
 import CeDropdownField from './CeDropdownField';
 import ConfigContext from './ConfigContext';
-import CustomProperies from './CustomProperties';
+import CustomData from './CustomData';
 import MultiSelect from './MultiSelect';
 
 export default function ComponentEdit({component, bom, readOnly, register}) {
@@ -178,10 +178,10 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
         { config.componentProperties.length > 0 &&
           <CompAccordion
               id="custom-accordion"
-              title="Custom"
+              title="Custom Data"
               ref={customAccRef}
           >
-                <CustomProperies
+                <CustomData
                     obj={component}
                     propertiesDef={config.componentProperties}
                     readOnly={readOnly}

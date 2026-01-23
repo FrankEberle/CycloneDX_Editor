@@ -81,7 +81,7 @@ function TupleEditDialog({config, obj, saveAction, closeAction}) {
     <DialogContent>
       <Box sx={{mt: 1}}>
         <form id="tuple-form" onSubmit={formSubmit}>
-          <CustomProperies
+          <CustomData
             register={register}
             obj={obj}
             propertiesDef={config.fields}
@@ -166,7 +166,7 @@ function TupleTable({config, obj, readOnly}) {
 
   React.useEffect(() => {
     loadTuples();
-  }, [obj]);
+  }, [obj]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
@@ -175,7 +175,6 @@ function TupleTable({config, obj, readOnly}) {
         obj={editTuple}
         closeAction={() => setEditTuple(undefined)}
         saveAction={(data) => {
-          const idx = tuples.length + 1;
           if (data["_id"] === undefined) {
             tuples.push(data);
           } else {
@@ -227,7 +226,7 @@ function TupleTable({config, obj, readOnly}) {
 }
 
 
-export default function CustomProperies({obj, propertiesDef, readOnly, register, parentRef}) {
+export default function CustomData({obj, propertiesDef, readOnly, register, parentRef}) {
   if (register === undefined) {
     register = () => {};
   }

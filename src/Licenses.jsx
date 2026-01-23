@@ -30,7 +30,7 @@ import * as CycloneDX from './cyclonedx';
 import Properties from './Properties';
 import EditTable from './EditTable';
 import ConfigContext from './ConfigContext';
-import CustomProperies from './CustomProperties';
+import CustomData from './CustomData';
 
 
 function LicenseEditDialog({license, saveAction, closeAction}) {
@@ -53,7 +53,7 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
     }
     // Either license name or license ID is required
     if (formData.get("name") == "" && formData.get("id") == "-") {
-      setWarnText("Name or ID is requird.");
+      setWarnText("Name or ID is required.");
       return;
     }
     // Prepare result data
@@ -66,15 +66,15 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
     // Copy form data into result data
     formData.entries().forEach(([key, value]) => {
       // Check if form data represent custom property
-      if (CycloneDX.isCustomProp(key)) {
+      if (CycloneDX.isCustomDataProp(key)) {
         // Yes, store data into properties array
-        CycloneDX.storeCustomProp(data.license.properties, key, value);
+        CycloneDX.storeCustomDataProp(data.license.properties, key, value);
       } else {
         // No, copy directly into license object
         data["license"][key] = value;
       }
     });
-    // No license ID selected in the ID dropdown is repesented by "-".
+    // No license ID selected in the ID dropdown is represented by "-".
     // If ID contains "-" remove the entire field
     if (data.license.id == "-") {
       delete data.license.id;
@@ -145,7 +145,7 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
             defaultValue={getLicValue("url", "")}
           />
           { config.licenseProperties.length > 0 &&
-            <CustomProperies
+            <CustomData
               obj={license.license}
               propertiesDef={config.licenseProperties}
             />
