@@ -46,7 +46,7 @@ function loadTextFile() {
 
 // utils for functions defined in configuration
 const utils = {
-  hastProerty: (c, name) => {
+  hastProperty: (c, name) => {
     for (let p of c.properties) {
       if (p.name == name) return true;
     }

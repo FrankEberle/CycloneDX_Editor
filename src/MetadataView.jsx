@@ -24,7 +24,7 @@ import MetadataEdit from './MetadataEdit';
 import MetadataEditDialog from './MetadataEditDialog';
 import * as CycloneDX from './cyclonedx';
 
-export default function MatadataView({metadata, show, bom}) {
+export default function MetadataView({metadata, show, bom}) {
   const [meta, setMeta] = React.useState(metadata);
   const [edit, setEdit] = React.useState(undefined);
 
