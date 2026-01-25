@@ -226,7 +226,17 @@ function TupleTable({config, obj, readOnly}) {
 }
 
 
-export default function CustomData({obj, propertiesDef, readOnly, register, parentRef}) {
+export default function CustomData({obj, subPath, propertiesDef, readOnly, register, parentRef}) {
+  if ((subPath !== undefined) && (typeof(subPath) != "string")) {
+    throw("Parameter subPath is invalid");
+  }
+  const inner = subPath === undefined ? obj : CycloneDX.getValue(obj, subPath);
+  if (subPath === undefined) {
+    subPath = ""
+  } else {
+    subPath = subPath + ".";
+  }
+
   if (register === undefined) {
     register = () => {};
   }
@@ -245,8 +255,8 @@ export default function CustomData({obj, propertiesDef, readOnly, register, pare
                 parentRef={parentRef}
                 key={p.name}
                 label={p.label}
-                name={"__prop_" + p.name}
-                defaultValue={getProp(obj, p.name, "")}
+                name={subPath + "__prop_" + p.name}
+                defaultValue={getProp(inner, p.name, "")}
                 readOnly={readOnly}
                 options={p.options}
                 emptyOpt={p.emptyOpt}
@@ -260,8 +270,8 @@ export default function CustomData({obj, propertiesDef, readOnly, register, pare
                 parentRef={parentRef}
                 key={p.name}
                 label={p.label}
-                name={"__prop_" + p.name}
-                defaultValue={getProp(obj, p.name, "")}
+                name={subPath + "__prop_" + p.name}
+                defaultValue={getProp(inner, p.name, "")}
                 readOnly={readOnly}
                 required={p.required}
               />
@@ -273,8 +283,8 @@ export default function CustomData({obj, propertiesDef, readOnly, register, pare
                 parentRef={parentRef}
                 key={p.name}
                 label={p.label}
-                name={"__prop_" + p.name}
-                defaultValue={getProp(obj, p.name, "")}
+                name={subPath + "__prop_" + p.name}
+                defaultValue={getProp(inner, p.name, "")}
                 readOnly={readOnly}
                 required={p.required}
                 rows={4}
@@ -285,7 +295,7 @@ export default function CustomData({obj, propertiesDef, readOnly, register, pare
               <TupleTable
                 key={"tupleTable_" + p.label[0]}
                 config={p}
-                obj={obj}
+                obj={inner}
                 readOnly={readOnly}
               />
             )

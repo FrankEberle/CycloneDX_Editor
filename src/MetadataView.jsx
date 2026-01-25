@@ -42,11 +42,12 @@ export default function MetadataView({metadata, show, bom}) {
         onClick={() => {setEdit(CycloneDX.deepCopy(meta))}}
       />
       <MetadataEditDialog
-        metadata={metadata}
+        metadata={edit}
         bom={bom}
         open={edit !== undefined}
         saveAction={() => {
-          setMeta({...metadata});
+          bom["metadata"] = edit;
+          setMeta({...edit});
           setEdit(undefined);
         }}
         closeAction={() => setEdit(undefined)}
