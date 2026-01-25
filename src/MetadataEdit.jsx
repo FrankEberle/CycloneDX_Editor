@@ -78,6 +78,7 @@ export default function MetadataEdit({metadata, readOnly, register, bom}) {
             />
             <CustomData
               obj={metadata}
+              subPath="component"
               propertiesDef={config.metaComponentProperties}
               readOnly={readOnly}
               register={register}
