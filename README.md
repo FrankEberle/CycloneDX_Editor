@@ -37,7 +37,7 @@ for development purpose.
 The container image is build using the following commands:
 ```
 cd CycloneDX_Editor
-docker build -f Dockerfile.development -t cyclonedx_editor_dev
+docker build -f Dockerfile.development -t cyclonedx_editor_dev .
 ```
 
 The following commands are used to invoke the Vite development sever inside the container:
@@ -52,7 +52,7 @@ cd CycloneDX_Editor
 docker run --rm -t -v ${PWD}:/work cyclonedx_editor_dev npm run build
 ```
 
-### Custom Properties
+### Custom Data
 CycloneDX allows to store custom information as key/value pairs at various
 places via the *properties* array.
 
@@ -63,7 +63,7 @@ Example:
     "specVersion": "1.6",
     "metadata": {
       "component": {
-        "properies": [
+        "properties": [
           {
             "name": "prop1",
             "value": "value1"
@@ -77,8 +77,15 @@ Example:
     }
 }
 ```
-The CycloneDX Editor can be configured to present additional input fields to
+The CycloneDX Editor can be configured to present additional input fields
 for entering custom data which is stored as properties.
+
+The following types of input fields are supported:
+* Single line text; with optional input validation
+* Multiline text
+* Dropdown selection
+* Records consisting of multiple fields as described above
+
 
 ## Configuration
 The application can be configured via a Javascript file named *config.js*. The file
@@ -104,7 +111,7 @@ which can be used to deploy the application.
 Enter the following commands to build the container image:
 ```
 cd CycloneDX_Editor
-docker build -f Dockerfile.deployment -t cyclonedx_editor
+docker build -f Dockerfile.deployment -t cyclonedx_editor .
 ```
 
 #### Running the Container Image
