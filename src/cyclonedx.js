@@ -468,6 +468,14 @@ function finalizeDependencies(bom) {
   finalizeSingleDependency(bom.metadata.component, bom, componentById);
 }
 
+function createBomSerialNumber() {
+  return "urn:uuid:" + crypto.randomUUID()
+}
+
+function createBomTimestamp() {
+  return new Date(Date.now()).toISOString();
+}
+
 function finalizeBom(bom) {
   // _flattenedComponents is possibly outdated
   bom._flattenedComponents = flattenComponents(bom.components);
@@ -485,12 +493,15 @@ function finalizeBom(bom) {
   delete bom._flattenedComponents;
   removeEmptyFields(bom);
   if ((bom["serialNumber"] === undefined) || bom.serialNumber == "") {
-    bom["serialNumber"] = "urn:uuid:" + crypto.randomUUID();
+    bom["serialNumber"] = createBomSerialNumber();
   }
   if ((bom["version"] === undefined) || bom.version == "") {
     bom["version"] = 1;
   }
   bom["version"] = Number(bom["version"]);
+  if ((bom.metadata.timestamp === undefined) || (bom.metadata.timestamp === "")) {
+    bom.metadata.timestamp = createBomTimestamp();
+  }
   return bom;
 }
 
@@ -511,85 +522,11 @@ function emptyBom() {
   const bom = {
     bomFormat: "CycloneDX",
     specVersion :"1.6",
-    serialNumber: "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+    serialNumber: createBomSerialNumber(),
     version: 1,
-    components: [
-      {
-        name: "Foo",
-        type: "library",
-        version: "0815",
-        components: [
-          {
-            "name": "inner",
-            "type": "library",
-            "components": []
-          }
-        ],
-        properties: [
-          {
-            "name": "abc11",
-            "value": "ABC",
-          },
-          {
-            "name": "abc222",
-            "value": "ABC"
-          },
-          {
-            "name": "abc3",
-            "value": "ABC"
-          },
-          {
-            "name": "de:frank-eberle:3rdPartyType",
-            "value": "internal"
-          },
-          {
-            "name": "de:frank-eberle:orderNumber1",
-            "value": "on1"
-          },
-          {
-            "name": "de:frank-eberle:productName1",
-            "value": "pn1"
-          },
-
-        ],
-        licenses: [
-          {
-            "license": {
-              "name": "foo",
-              "properties": [
-                {
-                  "name": "p1",
-                  "value": "v1"
-                },
-                {
-                  "name": "de:frank-eberle:selected",
-                  "value": "yes"
-                }
-              ]
-            }
-          },
-          {
-            "license": {
-              "id": "FreeImage",
-              "url": "https://www.frank-eberle.de/license",
-              "acknowledgement": "declared",
-            }
-          }
-        ],
-        externalReferences: [
-          {
-            type: "vcs",
-            url: "https://www.frank-eberle.de/vsc",
-            hashes: [
-              {
-                alg: "MD5",
-                content: "68b329da9893e34099c7d8ad5cb9c940",
-              }
-            ]
-          }
-        ]
-      }
-    ],
+    metadata: {
+      timestamp: createBomTimestamp(),
+    },
   };
   prepareBom(bom);
   return bom;
@@ -621,8 +558,6 @@ async function validateBom(bom) {
   AvjAddFormatsDraft2019(ajv);
   ajv.addSchema(spdx_schema, 'spdx.schema.json');
   ajv.addSchema(jsf_0_82_schema, 'jsf-0.82.schema.json');
-
-
   if (bom["specVersion"] === undefined) {
     throw new Error("specVersion not defined in BOM.");
   }
@@ -637,7 +572,6 @@ async function validateBom(bom) {
   }
   return true;
 }
-
 
 function formDataCopy(targetObj, formData) {
     formData.entries().forEach(([key, value]) => {
@@ -675,11 +609,9 @@ function formDataCopy(targetObj, formData) {
     });
 }
 
-
 function isCustomDataProp(name) {
   return name.startsWith("__prop_");
 }
-
 
 function storeCustomDataProp(properties, name, value) {
   let found = false;
@@ -699,7 +631,6 @@ function storeCustomDataProp(properties, name, value) {
   }
 
 }
-
 
 export {
   getComponentTypes,
