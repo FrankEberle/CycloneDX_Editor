@@ -36,7 +36,8 @@ function loadTextFile() {
       }
       const reader = new FileReader();
       reader.onload = () => {
-        resolve(reader.result)
+        loadBtn.value = "";
+        resolve(reader.result);
       };
       reader.readAsText(files[0]);  
     });
