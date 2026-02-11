@@ -7,6 +7,7 @@ import Box from '@mui/material/Box';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SaveIcon from '@mui/icons-material/Save';
 import ClearIcon from '@mui/icons-material/Clear';
+import ScienceIcon from '@mui/icons-material/Science';
 import GridViewIcon from '@mui/icons-material/GridView';
 
 import './App.css';
@@ -20,6 +21,8 @@ import * as CycloneDX from './cyclonedx';
 import ConfigContext from './ConfigContext';
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
+
+import demo_bom_url from './assets/demo_bom.json?url';
 
 
 function loadTextFile() {
@@ -145,8 +148,23 @@ async function loadBom(setBom, setErr) {
   setBom(bom);
 }
 
+async function loadDemoSbom(setBom, setErr) {
+  const response = await fetch(demo_bom_url);
+  const json_text = await response.text();
+  var bom = null;
+  try {
+    bom = JSON.parse(json_text);
+    await CycloneDX.validateBom(bom);
+  }
+  catch (error) {
+    setErr("Failed to load BOM: " + error.name + " / " + error.message);
+    return;
+  }
+  setBom(bom);
+}
+
+
 async function saveBom(bom, filename, setErr) {
-  console.log("Save");
   const bomFinalized = CycloneDX.finalizeBom(JSON.parse(JSON.stringify(bom)));
   try {
     await CycloneDX.validateBom(bomFinalized);
@@ -185,7 +203,6 @@ function App() {
   function bomLoaded(newBom) {
     if (newBom["components"] === undefined) bom["components"] = Array();
     CycloneDX.prepareBom(newBom);
-    console.log(newBom);
     setBom(newBom);
   }
 
@@ -214,6 +231,12 @@ function App() {
         icon: <SaveIcon/>,
         action: () => {setShowSaveDialog(true)},
       },
+      {
+        label: "Load Demo SBOM",
+        icon: <ScienceIcon/>,
+        action: () => {loadDemoSbom(bomLoaded, showErr)},
+      },
+
     ],
     [
       {
