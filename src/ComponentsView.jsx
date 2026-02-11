@@ -27,6 +27,7 @@ import GridViewIcon from '@mui/icons-material/GridView';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { useTreeViewApiRef} from '@mui/x-tree-view/hooks';
 import { DataGrid } from '@mui/x-data-grid';
+import { useTheme } from '@mui/material/styles';
 
 import NewComponentDialog from './NewComponentDialog';
 import ComponentEditDialog from './ComponentEditDialog';
@@ -179,6 +180,7 @@ export default function ComponentsView({show, bom}) {
   const [view, setView] = React.useState("table");
   const [tableSelectionModel, setTableSelectionModel] = React.useState(undefined);
   const [tableColumns, setTableColumns] = React.useState(undefined);
+  const primaryTextColor = useTheme().palette.text.primary;
 
   const treeApiRef = useTreeViewApiRef();
 
@@ -297,6 +299,9 @@ export default function ComponentsView({show, bom}) {
     let color = defaultColor;
     try {
       color = config["componentColorFunc"](component);
+      if (color === undefined) {
+        color = primaryTextColor;
+      }
     }
     catch(err) {
       console.log("Failed to get color: %o", err);
