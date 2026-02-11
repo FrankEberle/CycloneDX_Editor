@@ -397,7 +397,16 @@ export default function ComponentsView({show, bom}) {
             slotProps={{
               item: (ownerState) => ({
                 style: {
-                  color: getItemColor(ownerState)
+                  userSelect: 'none',
+                  color: getItemColor(ownerState),
+                },
+                onDoubleClick: (event) => {
+                  const c = CycloneDX.componentLookup(bom, ownerState.itemId);
+                  if (c !== undefined) {
+                    event.stopPropagation();
+                    setComponent(c);
+                    setEditComponent(CycloneDX.deepCopy(c));
+                  }
                 }
               })
             }}
