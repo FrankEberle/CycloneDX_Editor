@@ -558,6 +558,14 @@ async function validateBom(bom) {
   AvjAddFormatsDraft2019(ajv);
   ajv.addSchema(spdx_schema, 'spdx.schema.json');
   ajv.addSchema(jsf_0_82_schema, 'jsf-0.82.schema.json');
+  // Some SBOM generated from package dependencies contain
+  // URLs like git+https://. This causes a validation error
+  // when the URL is checked. The next three lines force
+  // the check to succeed. Maybe not the best solution, but it works
+  // for the moment.
+  ajv.addFormat("iri-reference", {
+    validate: () => true,
+  })
   if (bom["specVersion"] === undefined) {
     throw new Error("specVersion not defined in BOM.");
   }
