@@ -180,6 +180,7 @@ export default function ComponentsView({show, bom}) {
 
   React.useEffect(() => {
     setComponentsList(bom.components);
+    setComponent(null);
     bom._flattenedComponents.forEach((c) => {
       const color = getColor(c);
       c._color = color === undefined ? defaultColor : color;
