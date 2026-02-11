@@ -154,7 +154,15 @@ function getComponentsTableColumns(config) {
         field: col.field,
       }
       if (col["func"] !== undefined) {
-        colDef["valueGetter"] = (value, row) => {return col.func(row)};
+        colDef["valueGetter"] = (value, row) => {
+          try {
+            return col.func(row)
+          }
+          catch (e) {
+            console.log("Function for column '%s' failed; %s", col.headerName, e);
+            return "!! ERROR !!";
+          }
+        };
       }
       columns.push(colDef);
     });
