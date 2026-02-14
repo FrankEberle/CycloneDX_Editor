@@ -24,38 +24,21 @@ import AddBoxIcon from '@mui/icons-material/AddBox';
 import EditIcon from '@mui/icons-material/Edit';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import GridViewIcon from '@mui/icons-material/GridView';
-import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
+
 import { useTreeViewApiRef} from '@mui/x-tree-view/hooks';
-import { DataGrid } from '@mui/x-data-grid';
 import { useTheme } from '@mui/material/styles';
 
 import NewComponentDialog from './NewComponentDialog';
 import ComponentEditDialog from './ComponentEditDialog';
-import ComponentEdit from './ComponentEdit';
 import YesNoDialog from './YesNoDialog';
 import ConfigContext from './ConfigContext';
+import ComponentsGrid from './ComponentsGrid';
+import ComponentsTree from './ComponentsTree';
 import { Conditional } from './helper';
 import * as CycloneDX from './cyclonedx';
 
 const defaultColor = '#000000';
 
-function treeViewGetItemId(component) {
-  return component["_id"];
-}
-
-function treeViewGetItemLabel(component) {
-  if ((component["version"] !== undefined) && (component["version"] != "")) {
-    return `${component.name} (${component.version})`;
-  }
-  return component.name;
-}
-
-function treeViewGetItemChildren(component) {
-  if (component.components !== undefined) {
-    return component.components;
-  }
-  return new Array();
-}
 
 
 function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchAction}) {
@@ -127,49 +110,6 @@ function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchActi
   );
 }
 
-function getComponentsTableColumns(config) {
-    const columns = [
-      {
-        field: "_level",
-        headerName: "Level",
-      },
-      {
-        field: "name",
-        headerName: "Name",
-        renderCell: (params) => {
-          return (<span style={{color: params.row._color}}>{params.value}</span>)
-        },
-      },
-      {
-        field: "type",
-        headerName: "Type",
-      },
-      {
-        field: "version",
-        headerName: "Version",
-      }
-    ];
-    config.componentsTableColumns.forEach((col) => {
-      const colDef = {
-        headerName: col.headerName,
-        field: col.field,
-      }
-      if (col["func"] !== undefined) {
-        colDef["valueGetter"] = (value, row) => {
-          try {
-            return col.func(row)
-          }
-          catch (e) {
-            console.log("Function for column '%s' failed; %s", col.headerName, e);
-            return "!! ERROR !!";
-          }
-        };
-      }
-      columns.push(colDef);
-    });
-    return columns;
-}
-
 export default function ComponentsView({show, bom}) {
   const config = React.useContext(ConfigContext);
   const [componentsList, setComponentsList] = React.useState(Array());
@@ -178,15 +118,10 @@ export default function ComponentsView({show, bom}) {
   const [newCmpOpen, setNewCmpOpen] = React.useState(false);
   const [confirmDelOpen, setConfirmDelOpen] = React.useState(false);
   const [view, setView] = React.useState("table");
-  const [tableSelectionModel, setTableSelectionModel] = React.useState(undefined);
-  const [tableColumns, setTableColumns] = React.useState(undefined);
   const primaryTextColor = useTheme().palette.text.primary;
 
   const treeApiRef = useTreeViewApiRef();
 
-  if (tableColumns === undefined) {
-    setTableColumns(getComponentsTableColumns(config));
-  }
 
   React.useEffect(() => {
     setComponentsList(bom.components);
@@ -217,21 +152,6 @@ export default function ComponentsView({show, bom}) {
 
   function updateBom(refreshTree) {
     CycloneDX.prepareBom(bom);
-    /*
-    bom._flattenedComponents.forEach((component) => {
-        config.componentsTableColumns.forEach((column) => {
-          if (column.field.startsWith("_computed_")) {
-            try {
-              component[column.field] = column.func(component);
-            }
-            catch(err) {
-              console.log("Components table; error getting field '%s': %o", column.field, err);
-              component[column.field] = "";
-            }
-          }
-        });
-    });
-    */
     if (refreshTree) {
       setComponentsList([...bom.components]);
     }
@@ -339,14 +259,6 @@ export default function ComponentsView({show, bom}) {
     setEditComponent(undefined);
   }
 
-  function getItemColor(x) {
-    let color = defaultColor;
-    const comp = CycloneDX.componentLookup(bom, x.itemId);
-    if (comp !== undefined) {
-      color = comp._color;
-    }
-    return color;
-  }
 
   if (! show) {
     return <></>;
@@ -382,98 +294,21 @@ export default function ComponentsView({show, bom}) {
         viewSwitchAction={switchView}
       />
       <Conditional show={view == "tree"}>
-        <Box 
-          sx={{ 
-            width: '30%', 
-            borderRight: '1px solid grey', 
-            overflow: 'auto',
-            p: 2,
-          }}
-        >
-          <RichTreeView
-            apiRef={treeApiRef}
-            sx={{alignItems: 'left'}}
-            items={componentsList}
-            slotProps={{
-              item: (ownerState) => ({
-                style: {
-                  userSelect: 'none',
-                  color: getItemColor(ownerState),
-                },
-                onDoubleClick: (event) => {
-                  const c = CycloneDX.componentLookup(bom, ownerState.itemId);
-                  if (c !== undefined) {
-                    event.stopPropagation();
-                    setComponent(c);
-                    setEditComponent(CycloneDX.deepCopy(c));
-                  }
-                }
-              })
-            }}
-            getItemId={treeViewGetItemId}
-            getItemLabel={treeViewGetItemLabel}
-            getItemChildren={treeViewGetItemChildren}
-            expansionTrigger='iconContainer'
-            onItemFocus={(event, itemId) => {
-              // Set item as selected when it is focused, this allows
-              // to 'scroll' through the components by keyboard
-              // TODO: makes it slow for large BOMs, but it's more the rendering
-              // of the right frame
-              /*
-              treeApiRef.current.setItemSelection({
-                itemId: itemId,
-                shouldBeSelected: true,
-              });
-              */
-            }}
-            onItemSelectionToggle={(event, itemId, isSelected) => {
-              if (!isSelected) {
-                return;
-              }
-              const c = CycloneDX.componentLookup(bom, itemId);
-              if (c !== undefined) {
-                setComponent(c);
-              } else {
-                console.log("Error: Component not found")
-              }
-            }}
-          />
-        </Box>
-        <Box
-          sx={{ 
-            width: '70%', 
-            overflow: 'auto',
-            p: 1,
-            m: 1,
-          }}
-        >
-          <ComponentEdit
-            component={component}
-            bom={bom}
-            readOnly={true}
-          />
-        </Box>
+        <ComponentsTree
+          bom={bom}
+          component={component}
+          setComponent={setComponent}
+          componentsList={componentsList}
+          setEditComponent={setEditComponent}
+          treeApiRef={treeApiRef}
+      />
       </Conditional>
        <Conditional show={view == "table"}>
-        <DataGrid
-          getRowId={(r) => {return r._id}}
-          rowSelectionModel={tableSelectionModel}
-          onRowSelectionModelChange={(newSelectionModel) => {
-            setTableSelectionModel(newSelectionModel);
-          }}
-          onRowClick={(params) => {setComponent(params.row)}}
-          onRowDoubleClick={(params) => {
-            setTableSelectionModel({
-              type: "include",
-              ids: new Set([params.id]),
-            });
-            setComponent(params.row);
-            setEditComponent(CycloneDX.deepCopy(params.row));
-          }}
-          columns={tableColumns}
-          rows={bom._flattenedComponents}
+        <ComponentsGrid
+          bom={bom}
+          setComponent={setComponent}
+          setEditComponent={setEditComponent}
         />
-
        </Conditional>
     </Box>
   )
