@@ -17,7 +17,7 @@
 
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import Box from '@mui/material/Box';
-import ConfigContext from './ConfigContext';
+import { useTheme } from '@mui/material/styles';
 
 import ComponentEdit from './ComponentEdit';
 import * as CycloneDX from './cyclonedx';
@@ -43,9 +43,10 @@ function treeViewGetItemChildren(component) {
 
 
 export default function ComponentsTree({bom, componentsList, component, setComponent, setEditComponent, treeApiRef}) {
+  const primaryTextColor = useTheme().palette.text.primary;
 
   function getItemColor(x) {
-    let color = "#000000";
+    let color = primaryTextColor;
     const comp = CycloneDX.componentLookup(bom, x.itemId);
     if (comp !== undefined) {
       color = comp._color;

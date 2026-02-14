@@ -24,7 +24,6 @@ import AddBoxIcon from '@mui/icons-material/AddBox';
 import EditIcon from '@mui/icons-material/Edit';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import GridViewIcon from '@mui/icons-material/GridView';
-
 import { useTreeViewApiRef} from '@mui/x-tree-view/hooks';
 import { useTheme } from '@mui/material/styles';
 
@@ -36,9 +35,6 @@ import ComponentsGrid from './ComponentsGrid';
 import ComponentsTree from './ComponentsTree';
 import { Conditional } from './helper';
 import * as CycloneDX from './cyclonedx';
-
-const defaultColor = '#000000';
-
 
 
 function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchAction}) {
@@ -128,7 +124,7 @@ export default function ComponentsView({show, bom}) {
     setComponent(null);
     bom._flattenedComponents.forEach((c) => {
       const color = getColor(c);
-      c._color = color === undefined ? defaultColor : color;
+      c._color = color === undefined ? primaryTextColor : color;
     });
     if (bom.components.length > 0) {
       setComponent(bom.components[0]);
@@ -216,7 +212,7 @@ export default function ComponentsView({show, bom}) {
   }
 
   function getColor(component) {
-    let color = defaultColor;
+    let color = primaryTextColor;
     try {
       color = config["componentColorFunc"](component);
       if (color === undefined) {
