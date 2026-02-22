@@ -258,7 +258,18 @@ function prepareComponent(c, noID) {
     c.hashes.forEach((h) => {prepareHash(h)});
     setIfUndefined(c, "pedigree", {});
     preparePedigree(c.pedigree);
+    prepareCompany(c, "manufacturer");
+    prepareCompany(c, "supplier");
     return c;
+}
+
+function prepareCompany(base, key) {
+  setIfUndefined(base, key, {});
+  setIfUndefined(base[key], "contact", Array());
+  setIfUndefined(base[key], "url", Array());
+  base[key].contact.forEach((c) => {
+    setIdIfUndefined(c);
+  });
 }
 
 function prepareMetadata(bom) {
@@ -270,12 +281,8 @@ function prepareMetadata(bom) {
   metadata.properties.forEach((p) => {prepareProperty(p)})
   setIfUndefined(metadata, "authors", Array());
   metadata.authors.forEach((a) => {preparePerson(a)})
-  setIfUndefined(metadata, "manufacturer", {});
-  setIfUndefined(metadata.manufacturer, "contact", Array());
-  metadata.manufacturer.contact.forEach((c) => {
-    setIdIfUndefined(c);
-  });
-
+  prepareCompany(metadata, "manufacturer");
+  prepareCompany(metadata, "supplier");
 }
 
 function flattenComponents(components) {

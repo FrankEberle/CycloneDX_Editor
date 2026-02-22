@@ -18,6 +18,7 @@
 import React from 'react';
 import Stack from '@mui/material/Stack';
 import FormControl from '@mui/material/FormControl';
+import StrTable from './StrTable';
 import * as CycloneDX from './cyclonedx';
 
 import CeTextField from './CeTextField';
@@ -80,6 +81,11 @@ export default function Manufacturer({objName, component, readOnly}) {
           name={objName + ".address.streetAddress"}
           readOnly={readOnly}
           defaultValue={CycloneDX.getValue(comp, objName + ".address.streetAddress", "")}
+        />
+        <StrTable
+          title={"URL"}
+          readOnly={readOnly}
+          items={CycloneDX.getValue(comp, objName + ".url", Array())}
         />
         <Persons
           title={['Contact', 'Contact']}
