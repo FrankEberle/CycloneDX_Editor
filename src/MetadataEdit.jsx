@@ -25,12 +25,13 @@ import CeDropdownField from './CeDropdownField';
 import Manufacturer from './Manufacturer';
 import Persons from './Persons';
 import CustomData from './CustomData';
-import ConfigContext from './ConfigContext';
+import GlobalStateContext from './GlobalStateContext';
 import MultiSelect from './MultiSelect';
 import * as CycloneDX from './cyclonedx';
 
 export default function MetadataEdit({metadata, readOnly, register, bom}) {
-  const config = React.useContext(ConfigContext);
+  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
+  const config = globalState.config;
   const compAccRef = React.useRef();
   const miscAccRef = React.useRef();
 

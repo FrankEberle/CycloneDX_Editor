@@ -17,6 +17,6 @@
 
 import { createContext } from 'react';
 
-const ConfigContext = createContext(null);
+const GlobalStateContext = createContext(null);
 
-export default ConfigContext;
+export default GlobalStateContext;

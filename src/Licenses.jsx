@@ -29,13 +29,15 @@ import Collapse from '@mui/material/Collapse';
 import * as CycloneDX from './cyclonedx';
 import Properties from './Properties';
 import EditTable from './EditTable';
-import ConfigContext from './ConfigContext';
+import GlobalStateContext from './GlobalStateContext';
 import CustomData from './CustomData';
 
 
 function LicenseEditDialog({license, saveAction, closeAction}) {
   const [warnText, setWarnText] = React.useState("");
-  const config = React.useContext(ConfigContext);
+  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
+  const config = globalState.config;
+
 
   React.useEffect(() => {
     setWarnText("");
@@ -178,7 +180,8 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
 export default function Licenses({licenses, noTitle, readOnly}) {
   const [licensesList, setLicensesList] = React.useState([]);
   const [editLic, setEditLic] = React.useState(undefined);
-  const config = React.useContext(ConfigContext);
+  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
+  const config = globalState.config;
 
   React.useEffect(() => {
     setLicensesList(licenses);

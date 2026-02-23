@@ -29,12 +29,13 @@ import CompAccordion from './CompAccordion';
 import Manufacturer from './Manufacturer';
 import CeTextField from './CeTextField';
 import CeDropdownField from './CeDropdownField';
-import ConfigContext from './ConfigContext';
+import GlobalStateContext from './GlobalStateContext';
 import CustomData from './CustomData';
 import MultiSelect from './MultiSelect';
 
 export default function ComponentEdit({component, bom, readOnly, register}) {
-    const config = React.useContext(ConfigContext);
+    const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
+    const config = globalState.config;
     const identAccRef = React.useRef();
     const customAccRef = React.useRef();
     const typeValues = CycloneDX.getComponentTypes();

@@ -30,7 +30,7 @@ import { useTheme } from '@mui/material/styles';
 import NewComponentDialog from './NewComponentDialog';
 import ComponentEditDialog from './ComponentEditDialog';
 import YesNoDialog from './YesNoDialog';
-import ConfigContext from './ConfigContext';
+import GlobalStateContext from './GlobalStateContext';
 import ComponentsGrid from './ComponentsGrid';
 import ComponentsTree from './ComponentsTree';
 import { Conditional } from './helper';
@@ -107,7 +107,8 @@ function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchActi
 }
 
 export default function ComponentsView({show, bom}) {
-  const config = React.useContext(ConfigContext);
+  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
+  const config = globalState.config;
   const [componentsList, setComponentsList] = React.useState(Array());
   const [component, setComponent] = React.useState(null);
   const [editComponent, setEditComponent] = React.useState(undefined);

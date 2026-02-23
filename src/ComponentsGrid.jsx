@@ -16,9 +16,11 @@
 
 
 import * as React from 'react';
-import { DataGrid } from '@mui/x-data-grid';
+import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 
-import ConfigContext from './ConfigContext';
+import shajs from 'sha.js';
+
+import GlobalStateContext from './GlobalStateContext';
 import * as CycloneDX from './cyclonedx';
 
 
@@ -67,33 +69,89 @@ function getComponentsTableColumns(config) {
 
 
 export default function ComponentsGrid({bom, setComponent, setEditComponent}) {
-  const config = React.useContext(ConfigContext);
-  const [tableSelectionModel, setTableSelectionModel] = React.useState(undefined);
+  const LOCAL_STATE_KEY = "compGrid";
+  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
+  const config = globalState.config;
   const [tableColumns, setTableColumns] = React.useState(undefined);
-
-  if (tableColumns === undefined) {
-    setTableColumns(getComponentsTableColumns(config));
+  const apiRef = useGridApiRef()
+  
+  function saveState(what, value) {
+    let state = localStorage.getItem(LOCAL_STATE_KEY);
+    if (state === null) {
+      state = {};
+    } else {
+      state = JSON.parse(state);
+    }
+    state[what] = value;
+    localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(state));
   }
 
+  function loadState(what) {
+    let result = undefined;
+    let state = localStorage.getItem(LOCAL_STATE_KEY);
+    if (state !== null) {
+      state = JSON.parse(state);
+      result = state[what];
+    }
+    return result;
+  }
+
+  if (tableColumns === undefined) {
+    const columns = getComponentsTableColumns(config);
+    const hash = shajs('sha256').update(JSON.stringify(columns)).digest('hex');
+    const oldHash = loadState("oldHash");
+    if (hash !== oldHash) {
+      console.log("Clear state");
+      localStorage.removeItem(LOCAL_STATE_KEY);
+      saveState("oldHash", hash);
+    }
+    for (let col of columns) {
+      const width = loadState("width_" + col.field);
+      if (width !== undefined) {
+        col.width = width;
+      }
+    }
+    setTableColumns(columns);
+  }
+
+  const [colVisModel, setColVisModel] = React.useState(loadState("columnVisibility"))
 
   return(
     <DataGrid
+      apiRef={apiRef}
       getRowId={(r) => {return r._id}}
-      rowSelectionModel={tableSelectionModel}
-      onRowSelectionModelChange={(newSelectionModel) => {
-        setTableSelectionModel(newSelectionModel);
-      }}
+      sortModel={globalState.compGridSortModel}
+      rowSelectionModel={globalState.compGridRowSelectionModel}
+      columnVisibilityModel={colVisModel}
       onRowClick={(params) => {setComponent(params.row)}}
       onRowDoubleClick={(params) => {
-        setTableSelectionModel({
-          type: "include",
-          ids: new Set([params.id]),
-        });
+        apiRef.current.setRowSelectionModel(
+          {
+            type: "include",
+            ids: new Set([params.id]),
+          }
+        );
         setComponent(params.row);
         setEditComponent(CycloneDX.deepCopy(params.row));
       }}
       columns={tableColumns}
       rows={bom._flattenedComponents}
+      onSortModelChange={(model, details) => { // eslint-disable-line no-unused-vars
+        globalState.compGridSortModel = model;
+        setGlobalState({...globalState});
+      }}
+      onRowSelectionModelChange={(model, details) => { // eslint-disable-line no-unused-vars
+        globalState.compGridRowSelectionModel = model;
+        setGlobalState({...globalState});
+      }}
+      onColumnVisibilityModelChange={(model, details) => { // eslint-disable-line no-unused-vars
+        setColVisModel(model);
+        saveState("columnVisibility", model);
+      }}
+      onColumnWidthChange={(param) => {
+        console.log(param.colDef.field, param.colDef.width);
+        saveState("width_" + param.colDef.field, param.colDef.width);
+      }}
     />
   );
 }

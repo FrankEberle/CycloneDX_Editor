@@ -19,8 +19,10 @@
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "ajv-formats-draft2019": "^1.6.1",
+    "buffer": "^6.0.3",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "sha.js": "^2.4.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

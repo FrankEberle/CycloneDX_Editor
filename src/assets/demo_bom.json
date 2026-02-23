@@ -1,0 +1,88 @@
+  {
+    "bomFormat": "CycloneDX",
+    "specVersion" :"1.6",
+    "serialNumber": "urn:uuid:3e671687-395b-41f5-a30f-a58921a69b79",
+    "version": 1,
+    "components": [
+      {
+        "name": "Foo",
+        "type": "library",
+        "version": "0815",
+        "manufacturer": {
+          "url": [
+            "https://www.frank-eberle.de",
+            "https://www.foobar.de"
+          ]
+        },
+        "components": [
+          {
+            "name": "inner",
+            "type": "library",
+            "components": []
+          }
+        ],
+        "properties": [
+          {
+            "name": "abc11",
+            "value": "ABC"
+          },
+          {
+            "name": "abc222",
+            "value": "ABC"
+          },
+          {
+            "name": "abc3",
+            "value": "ABC"
+          },
+          {
+            "name": "de:foobar:3rdPartyType",
+            "value": "internal"
+          },
+          {
+            "name": "de:foobar:orderNumber1",
+            "value": "on1"
+          },
+          {
+            "name": "de:foobar:productName1",
+            "value": "pn1"
+          }
+        ],
+        "licenses": [
+          {
+            "license": {
+              "name": "foo",
+              "properties": [
+                {
+                  "name": "p1",
+                  "value": "v1"
+                },
+                {
+                  "name": "de:foobar:selected",
+                  "value": "yes"
+                }
+              ]
+            }
+          },
+          {
+            "license": {
+              "id": "FreeImage",
+              "url": "https://www.foobar.de/license",
+              "acknowledgement": "declared"
+            }
+          }
+        ],
+        "externalReferences": [
+          {
+            "type": "vcs",
+            "url": "git+https://www.foobar.de/vsc",
+            "hashes": [
+              {
+               "alg": "MD5",
+                "content": "68b329da9893e34099c7d8ad5cb9c940"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }

@@ -18,7 +18,7 @@ import ComponentsView from './ComponentsView';
 import MetadataView from './MetadataView';
 import SaveDialog from './SaveDialog';
 import * as CycloneDX from './cyclonedx';
-import ConfigContext from './ConfigContext';
+import GlobalStateContext from './GlobalStateContext';
 
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 
@@ -191,12 +191,13 @@ function App() {
   const [view, setView] = React.useState('metadata');
   const [heading, setHeading] = React.useState('Metadata');
   const [showSaveDialog, setShowSaveDialog] = React.useState(false);
-  const [config, setConfig] = React.useState(null);
   const [err, setErr] = React.useState(null);
+  const [globalState, setGlobalState] = React.useState({});
 
   React.useEffect(() => {
     loadConfig().then((c) => {
-      setConfig(c);
+      globalState.config = c;
+      setGlobalState({...globalState});
     });
   }, []);
 
@@ -266,12 +267,14 @@ function App() {
     ]
   ];
 
-  if (config == null) {
+  if (globalState.config === undefined) {
     return (<></>);
   }
 
   return (
-    <ConfigContext value={config}>
+    <GlobalStateContext
+      value={{globalState, setGlobalState}}
+    >
       <>
         <SaveDialog
           open={showSaveDialog}
@@ -332,7 +335,7 @@ function App() {
           />
         </Box>
       </>
-    </ConfigContext>
+    </GlobalStateContext>
   );
 }
 
