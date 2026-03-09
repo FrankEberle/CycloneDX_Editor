@@ -26,6 +26,7 @@ import Switch from '@mui/material/Switch';
 import FormControlLabel from '@mui/material/FormControlLabel';
 
 import * as CycloneDX from './cyclonedx';
+import { Conditional } from './helper';
 
 export default function NewComponentDialog({open, askSub, okAction, cancelAction}) {
   const handleSubmit = (event) => {
@@ -39,7 +40,9 @@ export default function NewComponentDialog({open, askSub, okAction, cancelAction
         <DialogContent>
             <DialogContentText></DialogContentText>
             <form onSubmit={handleSubmit} id="new_component_form">
-                <FormControlLabel control={<Switch name='subComponent' value="on" />} label="Sub-Component" labelPlacement='start'/>
+                <Conditional show={askSub}>
+                    <FormControlLabel control={<Switch name='subComponent' value="on" />} label="Sub-Component" labelPlacement='start'/>
+                </Conditional>
                 <TextField
                     autoFocus
                     required
