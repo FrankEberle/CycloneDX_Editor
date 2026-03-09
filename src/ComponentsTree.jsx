@@ -14,12 +14,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
+import * as React from 'react';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import Box from '@mui/material/Box';
 import { useTheme } from '@mui/material/styles';
 
 import ComponentEdit from './ComponentEdit';
+import GlobalStateContext from './GlobalStateContext';
 import * as CycloneDX from './cyclonedx';
 
 
@@ -44,7 +45,8 @@ function treeViewGetItemChildren(component) {
 
 export default function ComponentsTree({bom, componentsList, component, setComponent, setEditComponent, treeApiRef}) {
   const primaryTextColor = useTheme().palette.text.primary;
-
+  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
+  
   function getItemColor(x) {
     let color = primaryTextColor;
     const comp = CycloneDX.componentLookup(bom, x.itemId);
@@ -65,6 +67,7 @@ export default function ComponentsTree({bom, componentsList, component, setCompo
         }}
       >
         <RichTreeView
+          defaultExpandedItems={globalState.compGridExpanded !== undefined ? globalState.compGridExpanded : Array()}
           apiRef={treeApiRef}
           sx={{alignItems: 'left'}}
           items={componentsList}
@@ -110,6 +113,10 @@ export default function ComponentsTree({bom, componentsList, component, setCompo
             } else {
               console.log("Error: Component not found")
             }
+          }}
+          onExpandedItemsChange={(event, itemIds) => {
+            globalState.compGridExpanded = itemIds;
+            setGlobalState({...globalState});
           }}
         />
       </Box>

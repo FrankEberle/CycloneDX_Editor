@@ -207,7 +207,7 @@ export default function ComponentsView({show, bom}) {
       }
       setComponent(selComp);
     } else {
-      setComponent(undefined);
+      setComponent(null);
     }
     setConfirmDelOpen(false);
   }
@@ -284,10 +284,10 @@ export default function ComponentsView({show, bom}) {
       />
       <ComponentSpeedDial
         addAction={() => {setNewCmpOpen(true)}}
-        editAction={component === undefined ? undefined : () => {
+        editAction={component === null ? undefined : () => {
           setEditComponent(CycloneDX.deepCopy(component));
         }}
-        deleteAction={component === undefined ? undefined : () => {setConfirmDelOpen(true)}}
+        deleteAction={component === null ? undefined : () => {setConfirmDelOpen(true)}}
         viewSwitchAction={switchView}
       />
       <Conditional show={view == "tree"}>
