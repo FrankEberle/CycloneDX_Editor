@@ -8,6 +8,7 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SaveIcon from '@mui/icons-material/Save';
 import ClearIcon from '@mui/icons-material/Clear';
 import ScienceIcon from '@mui/icons-material/Science';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import GridViewIcon from '@mui/icons-material/GridView';
 
 import './App.css';
@@ -17,12 +18,10 @@ import GlobalDataView from './GlobalDataView';
 import ComponentsView from './ComponentsView';
 import MetadataView from './MetadataView';
 import SaveDialog from './SaveDialog';
-import * as CycloneDX from './cyclonedx';
+import TemplateDialog from './TemplateDialog';
+import ErrorDialog from './ErrorDialog';
 import GlobalStateContext from './GlobalStateContext';
-
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
-
-import demo_bom_url from './assets/demo_bom.json?url';
+import * as CycloneDX from './cyclonedx';
 
 
 function loadTextFile() {
@@ -132,7 +131,7 @@ async function loadConfig() {
   return config;
 }
 
-async function loadBom(setBom, setErr) {
+async function loadBomFromLocalFile(setBom, setErr) {
   const text = await loadTextFile();
   if (text === null) {
     return;
@@ -148,8 +147,12 @@ async function loadBom(setBom, setErr) {
   setBom(bom);
 }
 
-async function loadDemoSbom(setBom, setErr) {
-  const response = await fetch(demo_bom_url);
+async function loadBomFromUrl(url, setBom, setErr) {
+  const response = await fetch(url);
+  if (response.status != 200) {
+    setErr(`Failed to load SBOM: Server returned status code ${response.status} (${response.statusText})`);
+    return;
+  }
   const json_text = await response.text();
   var bom = null;
   try {
@@ -191,7 +194,8 @@ function App() {
   const [view, setView] = React.useState('metadata');
   const [heading, setHeading] = React.useState('Metadata');
   const [showSaveDialog, setShowSaveDialog] = React.useState(false);
-  const [err, setErr] = React.useState(null);
+  const [showTemplateDialog, setShowTemplateDialog] = React.useState(false);
+  const [err, setErr] = React.useState(undefined);
   const [globalState, setGlobalState] = React.useState({});
 
   React.useEffect(() => {
@@ -200,6 +204,10 @@ function App() {
       setGlobalState({...globalState});
     });
   }, []);
+
+  if (globalState.config === undefined) {
+    return (<></>);
+  }
 
   function bomLoaded(newBom) {
     if (newBom["components"] === undefined) bom["components"] = Array();
@@ -225,19 +233,13 @@ function App() {
       {
         label: "Load",
         icon: <FolderOpenIcon/>,
-        action: () => loadBom(bomLoaded, showErr),
+        action: () => loadBomFromLocalFile(bomLoaded, showErr),
       },
       {
         label: "Save",
         icon: <SaveIcon/>,
         action: () => {setShowSaveDialog(true)},
       },
-      {
-        label: "Load Demo SBOM",
-        icon: <ScienceIcon/>,
-        action: () => {loadDemoSbom(bomLoaded, showErr)},
-      },
-
     ],
     [
       {
@@ -266,9 +268,23 @@ function App() {
       },
     ]
   ];
-
-  if (globalState.config === undefined) {
-    return (<></>);
+  if (globalState.config.templates !== undefined) {
+    burgerMenuItems[0].push(
+      {
+        label: "Load Template",
+        icon: <ListAltIcon/>,
+        action: () => {setShowTemplateDialog(true)},
+      }
+    );
+  }
+  if (globalState.config.testBom !== undefined) {
+    burgerMenuItems[0].push(
+      {
+        label: "Load Test SBOM",
+        icon: <ScienceIcon/>,
+        action: () => {loadBomFromUrl(globalState.config.testBom, bomLoaded, showErr)},
+      }
+    );
   }
 
   return (
@@ -276,33 +292,24 @@ function App() {
       value={{globalState, setGlobalState}}
     >
       <>
+        <ErrorDialog
+          err={err}
+          closeAction={() => {setErr(undefined)}}
+        />
         <SaveDialog
           open={showSaveDialog}
           saveAction={(data) => {saveBom(bom, data.filename, showErr)}}
           closeAction={() => {setShowSaveDialog(false)}}
         />
-        <Dialog
-          open={err != null}
-          maxWidth={'sm'}
-        >
-          <DialogTitle sx={{color: 'error.main'}}>
-              Error
-          </DialogTitle>
-          <DialogContent sx={{minWidth: '500px'}}>
-            <Typography>
-              {err}
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button
-              onClick={() => setErr(null)}
-              color='error'
-              variant='contained'
-            >
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <TemplateDialog
+          open={showTemplateDialog}
+          templates={globalState.config.templates}
+          okAction={(templateUrl) => {
+            setShowTemplateDialog(false);
+            loadBomFromUrl(templateUrl, bomLoaded, showErr);
+          }}
+          cancelAction={() => {setShowTemplateDialog(false)}}
+        />
         <Box sx={{display: "none"}}><input type="file" id="__loadFileBtn"/></Box>
         <Box
           sx={{ 
