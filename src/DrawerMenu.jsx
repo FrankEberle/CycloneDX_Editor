@@ -26,8 +26,9 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import Badge from '@mui/material/Badge';
 
-export default function DrawerButton({options}) {
+export default function DrawerButton({options, indicator}) {
     const [open, setOpen] = React.useState(false);
 
     function optionClicked(action) {
@@ -56,6 +57,7 @@ export default function DrawerButton({options}) {
 
     return (
         <>
+         
             <IconButton
                 id="burger-button"
                 onClick={() => setOpen(true) }
@@ -65,8 +67,11 @@ export default function DrawerButton({options}) {
                 aria-label="menu"
                 sx={{ mr: 2 }}
             >
+                <Badge color="warning" variant="dot" invisible={!indicator}>
                 <MenuIcon/>
+                </Badge>
             </IconButton>
+            
             <Drawer open={open} onClose={() => setOpen(false)}>
                 <Box role='presentation' sx={{width: 200}}>
                     {

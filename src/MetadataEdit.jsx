@@ -30,8 +30,8 @@ import MultiSelect from './MultiSelect';
 import * as CycloneDX from './cyclonedx';
 
 export default function MetadataEdit({metadata, readOnly, register, bom}) {
-  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
-  const config = globalState.config;
+  const globalState = React.useContext(GlobalStateContext);
+  const config = globalState.getObj("config");
   const compAccRef = React.useRef();
   const miscAccRef = React.useRef();
 

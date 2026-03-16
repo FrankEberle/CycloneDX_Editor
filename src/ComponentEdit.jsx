@@ -34,8 +34,8 @@ import CustomData from './CustomData';
 import MultiSelect from './MultiSelect';
 
 export default function ComponentEdit({component, bom, readOnly, register}) {
-    const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
-    const config = globalState.config;
+    const globalState = React.useContext(GlobalStateContext);
+    const config = globalState.get("config");
     const identAccRef = React.useRef();
     const customAccRef = React.useRef();
     const typeValues = CycloneDX.getComponentTypes();

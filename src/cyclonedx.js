@@ -509,6 +509,10 @@ function finalizeBom(bom) {
   if ((bom.metadata.timestamp === undefined) || (bom.metadata.timestamp === "")) {
     bom.metadata.timestamp = createBomTimestamp();
   }
+  // if metadata.component only includes bom-ref, then remove component
+  if (bom.metadata.component.name === undefined) {
+    delete bom.metadata.component;
+  }
   return bom;
 }
 

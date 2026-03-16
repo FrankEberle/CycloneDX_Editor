@@ -45,7 +45,7 @@ function treeViewGetItemChildren(component) {
 
 export default function ComponentsTree({bom, componentsList, component, setComponent, setEditComponent, treeApiRef}) {
   const primaryTextColor = useTheme().palette.text.primary;
-  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
+  const globalState = React.useContext(GlobalStateContext);
   
   function getItemColor(x) {
     let color = primaryTextColor;
@@ -67,7 +67,7 @@ export default function ComponentsTree({bom, componentsList, component, setCompo
         }}
       >
         <RichTreeView
-          defaultExpandedItems={globalState.compGridExpanded !== undefined ? globalState.compGridExpanded : Array()}
+          defaultExpandedItems={globalState.get("compGridExpanded", Array())}
           apiRef={treeApiRef}
           sx={{alignItems: 'left'}}
           items={componentsList}
@@ -115,8 +115,7 @@ export default function ComponentsTree({bom, componentsList, component, setCompo
             }
           }}
           onExpandedItemsChange={(event, itemIds) => {
-            globalState.compGridExpanded = itemIds;
-            setGlobalState({...globalState});
+            globalState.set("compGridExpanded", itemIds);
           }}
         />
       </Box>

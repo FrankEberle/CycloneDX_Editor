@@ -1,3 +1,20 @@
+/**
+ * Copyright (C) 2026  Frank Eberle
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import * as React from 'react';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
@@ -10,6 +27,8 @@ import ClearIcon from '@mui/icons-material/Clear';
 import ScienceIcon from '@mui/icons-material/Science';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import GridViewIcon from '@mui/icons-material/GridView';
+import { ConfirmProvider } from 'material-ui-confirm'
+import { useConfirm } from "material-ui-confirm";
 
 import './App.css';
 
@@ -20,7 +39,9 @@ import MetadataView from './MetadataView';
 import SaveDialog from './SaveDialog';
 import TemplateDialog from './TemplateDialog';
 import ErrorDialog from './ErrorDialog';
+import GlobalStateProvider from './GlobalStateProvider';
 import GlobalStateContext from './GlobalStateContext';
+import { loadConfig} from './ConfigLoader';
 import * as CycloneDX from './cyclonedx';
 
 
@@ -47,134 +68,24 @@ function loadTextFile() {
   return p;
 }
 
-// utils for functions defined in configuration
-const utils = {
-  hastProperty: (c, name) => {
-    for (let p of c.properties) {
-      if (p.name == name) return true;
-    }
-    return false;
-  },
 
-  getProperty: (c, name) => {
-    for (let p of c.properties) {
-      if (p.name == name) return p.value;
-    }
-    return undefined;
-  },
-}
-window.CycloneDX = utils;
-
-
-async function loadConfig() {
-  // https://react.dev/learn/passing-data-deeply-with-context
-  let config;
-  try {
-    const config_file = "config";
-    const module = await import(/* @vite-ignore */ `./${config_file}.js`);
-    config = module.default;
-  }
-  catch (error) {
-    console.log("Failed to load configuration: %o", error);
-    config = {};
-  }
-  if (config["componentProperties"] === undefined) {
-    config["componentProperties"] = Array();
-  }
-  if (config["licenseProperties"] === undefined) {
-    config["licenseProperties"] = Array();
-  }
-  if (config["metaComponentProperties"] === undefined) {
-    config["metaComponentProperties"] = Array();
-  }
-  if (config["componentColorFunc"] === undefined) {
-    config["componentColorFunc"] = () => {return undefined};
-  }
-  if (config["componentsTableColumns"] === undefined) {
-    config.componentsTableColumns = Array();
-  } else {
-    const columns = Array();
-    let i = -1;
-    for (let col of config.componentsTableColumns) {
-      i = i + 1;
-      const colDef = {}
-      if (col["headerName"] === undefined) {
-        console.log("Config error, componentsTableColumns[%d]: 'headerName' is missing", i);
-        continue;
-      }
-      colDef.headerName = col.headerName;
-      if (col["func"] !== undefined) {
-        if (col["field"] !== undefined) {
-          console.log("Config warning, componentsTableColumns[%d]: 'field' and 'func' are mutual exclusive", i);
-        }
-        colDef.func = col.func;
-        colDef.field = "_computed_func_" + String(columns.length);
-      } else if (col.field !== undefined) {
-        if (typeof(col.field) != "string") {
-          console.log("Config error, componentsTableColumns[%d]: 'field' has invalid type'", i);
-          continue;
-        }
-        if (col.field.includes(".")) {
-          colDef.field = "_computed_" + col.field;
-          colDef.func = (c) => {return CycloneDX.getValue(c, col.field)};
-        } else {
-          colDef.field = col.field;
-        }
-      } else {
-        console.log("Config error, componentsTableColumns[%d]: neither 'field' nor 'func' defined", i);
-        continue
-      }
-      columns.push(colDef);
-    }
-    config.componentsTableColumns = columns;
-  }
-  return config;
-}
-
-async function loadBomFromLocalFile(setBom, setErr) {
-  const text = await loadTextFile();
-  if (text === null) {
-    return;
-  }
-  var bom = null;
-  try {
-    bom = JSON.parse(text);
-    await CycloneDX.validateBom(bom);
-  } catch (error) {
-    setErr("Failed to load BOM: " + error.name + " / " + error.message);
-    return;
-  }
-  setBom(bom);
-}
-
-async function loadBomFromUrl(url, setBom, setErr) {
+async function loadTextFileFromUrl(url) {
   const response = await fetch(url);
   if (response.status != 200) {
-    setErr(`Failed to load SBOM: Server returned status code ${response.status} (${response.statusText})`);
-    return;
+    throw new Error(`Failed to load SBOM: Server returned status code ${response.status} (${response.statusText})`);
   }
-  const json_text = await response.text();
-  var bom = null;
-  try {
-    bom = JSON.parse(json_text);
-    await CycloneDX.validateBom(bom);
-  }
-  catch (error) {
-    setErr("Failed to load BOM: " + error.name + " / " + error.message);
-    return;
-  }
-  setBom(bom);
+  const text = await response.text();
+  return text;
 }
 
 
-async function saveBom(bom, filename, setErr) {
+async function saveBom(bom, filename) {
   const bomFinalized = CycloneDX.finalizeBom(JSON.parse(JSON.stringify(bom)));
   try {
     await CycloneDX.validateBom(bomFinalized);
   }
   catch (error) {
-    setErr("Failed to save BOM: " + error.name + " / " + error.message);
-    return;
+    throw new Error("Failed to save BOM: " + error.name + " / " + error.message);
   }
   const json = JSON.stringify(bomFinalized, null, "  ");
   const blob = new Blob([json], { type: "application/json" });
@@ -189,38 +100,67 @@ async function saveBom(bom, filename, setErr) {
   URL.revokeObjectURL(url);
 }
 
-function App() {
+
+function Inner() {
   const [bom, setBom] = React.useState(CycloneDX.emptyBom());
   const [view, setView] = React.useState('metadata');
   const [heading, setHeading] = React.useState('Metadata');
   const [showSaveDialog, setShowSaveDialog] = React.useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = React.useState(false);
   const [err, setErr] = React.useState(undefined);
-  const [globalState, setGlobalState] = React.useState({});
+  const confirm = useConfirm();
+  
+  const globalState = React.useContext(GlobalStateContext);
 
   React.useEffect(() => {
     loadConfig().then((c) => {
-      globalState.config = c;
-      setGlobalState({...globalState});
+      globalState.set("config", c);
     });
   }, []);
 
-  if (globalState.config === undefined) {
+  if (! globalState.has("config")) {
     return (<></>);
   }
 
-  function bomLoaded(newBom) {
-    if (newBom["components"] === undefined) bom["components"] = Array();
-    CycloneDX.prepareBom(newBom);
-    setBom(newBom);
+  async function confirmModified() {
+    if (globalState.getBool("modified")) {
+      const { confirmed } = await confirm({
+          title: "Confirmation",
+          description: "There are unsaved changes, continue?",
+      });
+      if (! confirmed) {
+        return false;
+      }
+    }
+    return true;
   }
 
-  function clearBom() {
-    setBom(CycloneDX.emptyBom());
+  async function clearBom() {
+    if (await confirmModified()) {
+      setBom(CycloneDX.emptyBom());
+      globalState.set("modified", false);
+    }
   }
 
-  function showErr(text) {
-    setErr(text);
+  async function loader(func) {
+    if (! await confirmModified()) {
+      return;
+    }
+    try {
+      const json_text = await func();
+      if ((json_text === undefined) || (json_text === null)) {
+        return;
+      }
+      const bom = JSON.parse(json_text)
+      await CycloneDX.validateBom
+      if (bom["components"] === undefined) bom["components"] = Array();
+      CycloneDX.prepareBom(bom);
+      setBom(bom);
+      globalState.set("modified", false);
+    }
+    catch (error) {
+      setErr(error.message);
+    }
   }
 
   const burgerMenuItems = [
@@ -233,7 +173,7 @@ function App() {
       {
         label: "Load",
         icon: <FolderOpenIcon/>,
-        action: () => loadBomFromLocalFile(bomLoaded, showErr),
+        action: () => {loader(loadTextFile)}
       },
       {
         label: "Save",
@@ -268,7 +208,7 @@ function App() {
       },
     ]
   ];
-  if (globalState.config.templates !== undefined) {
+  if (globalState.getObj("config").templates !== undefined) {
     burgerMenuItems[0].push(
       {
         label: "Load Template",
@@ -277,73 +217,88 @@ function App() {
       }
     );
   }
-  if (globalState.config.testBom !== undefined) {
+  if (globalState.getObj("config").testBom !== undefined) {
     burgerMenuItems[0].push(
       {
         label: "Load Test SBOM",
         icon: <ScienceIcon/>,
-        action: () => {loadBomFromUrl(globalState.config.testBom, bomLoaded, showErr)},
+        action: () => {loader(async () => {return await loadTextFileFromUrl(globalState.getObj("config").testBom)})},
       }
     );
   }
 
   return (
-    <GlobalStateContext
-      value={{globalState, setGlobalState}}
-    >
-      <>
-        <ErrorDialog
-          err={err}
-          closeAction={() => {setErr(undefined)}}
+    <>
+      <ErrorDialog
+        err={err}
+        closeAction={() => {setErr(undefined)}}
+      />
+      <SaveDialog
+        open={showSaveDialog}
+        saveAction={async (data) => {
+          try {
+             await saveBom(bom, data.filename);
+            globalState.set("modified", false);
+          }
+          catch (error) {
+            setErr(error.message);
+          }
+        }}
+        closeAction={() => {setShowSaveDialog(false)}}
+      />
+      <TemplateDialog
+        open={showTemplateDialog}
+        templates={globalState.getObj("config").templates}
+        okAction={(templateUrl) => {
+          setShowTemplateDialog(false);
+          loader(async () => {return await loadTextFileFromUrl(templateUrl)});
+        }}
+        cancelAction={() => {setShowTemplateDialog(false)}}
+      />
+      <Box sx={{display: "none"}}><input type="file" id="__loadFileBtn"/></Box>
+      <Box
+        sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          height: '100vh', // Volle Viewport-Höhe
+          overflow: 'hidden' // Verhindert Scrollen auf der Hauptebene
+        }}
+      >
+        <AppBar position="static">
+          <Toolbar>
+            <DrawerMenu
+              options={burgerMenuItems}
+              indicator={globalState.getBool("modified")}
+            />
+            <Typography variant="h6" component="div">
+              CycloneDX Editor - {heading}
+            </Typography>
+          </Toolbar>
+        </AppBar>
+        <GlobalDataView
+          show={view == "global"}
+          bom={bom}
         />
-        <SaveDialog
-          open={showSaveDialog}
-          saveAction={(data) => {saveBom(bom, data.filename, showErr)}}
-          closeAction={() => {setShowSaveDialog(false)}}
+        <MetadataView
+          show={view == "metadata"}
+          metadata={bom.metadata}
+          bom={bom}
         />
-        <TemplateDialog
-          open={showTemplateDialog}
-          templates={globalState.config.templates}
-          okAction={(templateUrl) => {
-            setShowTemplateDialog(false);
-            loadBomFromUrl(templateUrl, bomLoaded, showErr);
-          }}
-          cancelAction={() => {setShowTemplateDialog(false)}}
+        <ComponentsView
+          show={view == "components"}
+          bom={bom}
         />
-        <Box sx={{display: "none"}}><input type="file" id="__loadFileBtn"/></Box>
-        <Box
-          sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            height: '100vh', // Volle Viewport-Höhe
-            overflow: 'hidden' // Verhindert Scrollen auf der Hauptebene
-          }}
-        >
-          <AppBar position="static">
-            <Toolbar>
-              <DrawerMenu options={burgerMenuItems}/>
-              <Typography variant="h6" component="div">
-                CycloneDX Editor - {heading}
-              </Typography>
-            </Toolbar>
-          </AppBar>
-          <GlobalDataView
-            show={view == "global"}
-            bom={bom}
-          />
-          <MetadataView
-            show={view == "metadata"}
-            metadata={bom.metadata}
-            bom={bom}
-          />
-          <ComponentsView
-            show={view == "components"}
-            bom={bom}
-          />
-        </Box>
-      </>
-    </GlobalStateContext>
+      </Box>
+    </>
   );
 }
 
-export default App
+export default function App() {
+  return (
+    <GlobalStateProvider>
+      <ConfirmProvider>
+        <Inner/>
+      </ConfirmProvider>
+    </GlobalStateProvider>
+  );
+}

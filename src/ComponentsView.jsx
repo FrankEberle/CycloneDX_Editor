@@ -107,8 +107,8 @@ function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchActi
 }
 
 export default function ComponentsView({show, bom}) {
-  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
-  const config = globalState.config;
+  const globalState = React.useContext(GlobalStateContext);
+  const config = globalState.getObj("config");
   const [componentsList, setComponentsList] = React.useState(Array());
   const [component, setComponent] = React.useState(null);
   const [editComponent, setEditComponent] = React.useState(undefined);
@@ -118,7 +118,6 @@ export default function ComponentsView({show, bom}) {
   const primaryTextColor = useTheme().palette.text.primary;
 
   const treeApiRef = useTreeViewApiRef();
-
 
   React.useEffect(() => {
     setComponentsList(bom.components);
@@ -137,7 +136,6 @@ export default function ComponentsView({show, bom}) {
       }
     }
   }, [bom]);
-  
 
   function switchView() {
     if (view == "tree") {
@@ -186,6 +184,7 @@ export default function ComponentsView({show, bom}) {
         shouldBeSelected: true,
       })
     }
+    globalState.set("modified", true);
   }
 
   function delComponent() {
@@ -197,6 +196,7 @@ export default function ComponentsView({show, bom}) {
       return [true, undefined];
     });
     updateBom(true);
+    globalState.set("modified", true);
     if (bom.components.length > 0) {
       const selComp = bom.components[0];
       if (treeApiRef.current !== undefined) {

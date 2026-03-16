@@ -70,8 +70,8 @@ function getComponentsTableColumns(config) {
 
 export default function ComponentsGrid({bom, setComponent, setEditComponent}) {
   const LOCAL_STATE_KEY = "compGrid";
-  const {globalState, setGlobalState} = React.useContext(GlobalStateContext);
-  const config = globalState.config;
+  const globalState = React.useContext(GlobalStateContext);
+  const config = globalState.get("config");
   const [tableColumns, setTableColumns] = React.useState(undefined);
   const apiRef = useGridApiRef()
   
@@ -101,7 +101,6 @@ export default function ComponentsGrid({bom, setComponent, setEditComponent}) {
     const hash = shajs('sha256').update(JSON.stringify(columns)).digest('hex');
     const oldHash = loadState("oldHash");
     if (hash !== oldHash) {
-      console.log("Clear state");
       localStorage.removeItem(LOCAL_STATE_KEY);
       saveState("oldHash", hash);
     }
@@ -120,8 +119,8 @@ export default function ComponentsGrid({bom, setComponent, setEditComponent}) {
     <DataGrid
       apiRef={apiRef}
       getRowId={(r) => {return r._id}}
-      sortModel={globalState.compGridSortModel}
-      rowSelectionModel={globalState.compGridRowSelectionModel}
+      sortModel={globalState.get("compGridSortModel")}
+      rowSelectionModel={globalState.get("compGridRowSelectionModel")}
       columnVisibilityModel={colVisModel}
       onRowClick={(params) => {setComponent(params.row)}}
       onRowDoubleClick={(params) => {
@@ -137,19 +136,16 @@ export default function ComponentsGrid({bom, setComponent, setEditComponent}) {
       columns={tableColumns}
       rows={bom._flattenedComponents}
       onSortModelChange={(model, details) => { // eslint-disable-line no-unused-vars
-        globalState.compGridSortModel = model;
-        setGlobalState({...globalState});
+        globalState.set("compGridSortModel", model);
       }}
       onRowSelectionModelChange={(model, details) => { // eslint-disable-line no-unused-vars
-        globalState.compGridRowSelectionModel = model;
-        setGlobalState({...globalState});
+        globalState.set("compGridRowSelectionModel", model);
       }}
       onColumnVisibilityModelChange={(model, details) => { // eslint-disable-line no-unused-vars
         setColVisModel(model);
         saveState("columnVisibility", model);
       }}
       onColumnWidthChange={(param) => {
-        console.log(param.colDef.field, param.colDef.width);
         saveState("width_" + param.colDef.field, param.colDef.width);
       }}
     />
