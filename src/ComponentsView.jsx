@@ -229,23 +229,28 @@ export default function ComponentsView({show, bom}) {
   function storeComponent() {
     let refreshRequired = false;
     if (editComponent["_id"] === undefined) {
+      // TODO: is this branch still required?
       bom["components"].push(CycloneDX.prepareComponent(editComponent));
       refreshRequired = true;
+      globalState.set("modified", true);
     } else {
       CycloneDX.foreachComponent(bom, (c, a, idx) => {
         if (c["_id"] == editComponent["_id"]) {
-          ["name", "version", "type"].forEach((field) => {
-            if (c[field] != editComponent[field]) {
+          if (! CycloneDX.deepCompare(c, editComponent)) {
+            globalState.set("modified", true);
+            ["name", "version", "type"].forEach((field) => {
+              if (c[field] != editComponent[field]) {
+                refreshRequired = true;
+              }
+            });
+            let color = getColor(editComponent);
+            if (c["_color"] !== color) {
+              editComponent["_color"] = color;
               refreshRequired = true;
             }
-          });
-          let color = getColor(editComponent);
-          if (c["_color"] !== color) {
-            editComponent["_color"] = color;
-            refreshRequired = true;
+            a.components[idx] = editComponent;
+            setComponent(a.components[idx]);
           }
-          a.components[idx] = editComponent;
-          setComponent(a.components[idx]);
           return [false, undefined];
         } else {
           return [true, undefined];

@@ -520,6 +520,10 @@ function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
+function deepCompare(a, b) {
+  return JSON.stringify(a) == JSON.stringify(b);
+}
+
 function replaceArrayElem(array, newElem) {
   for (let i = 0; i < array.length; ++i) {
     if (array[i]._id == newElem._id) {
@@ -663,6 +667,7 @@ export {
   preparePerson,
   finalizeBom,
   deepCopy,
+  deepCompare,
   getSpdxIDs,
   prepareExtRef,
   getExtRefTypes,
