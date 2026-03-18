@@ -27,6 +27,13 @@ import ClearIcon from '@mui/icons-material/Clear';
 import ScienceIcon from '@mui/icons-material/Science';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import GridViewIcon from '@mui/icons-material/GridView';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
+import TextIncreaseIcon from '@mui/icons-material/TextIncrease';
+import TextDecreaseIcon from '@mui/icons-material/TextDecrease';
+import { createTheme, ThemeProvider, CssBaseline, IconButton, ButtonGroup } from '@mui/material';
+import { useColorScheme  } from '@mui/material/styles';
+import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { ConfirmProvider } from 'material-ui-confirm'
 import { useConfirm } from "material-ui-confirm";
 
@@ -101,7 +108,39 @@ async function saveBom(bom, filename) {
 }
 
 
-function Inner() {
+function ThemeToggle() 
+{
+  const { mode, setMode } = useColorScheme();
+
+  const toggleMode = () => {
+    setMode(mode === 'light' ? 'dark' : 'light');
+  };
+
+  return (
+    <IconButton onClick={toggleMode} color="inherit">
+      {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+    </IconButton>
+  );
+}
+
+
+function FontSizeToggle({setFontSize}) {
+  const handleIncrease = () => setFontSize((prev) => Math.min(prev + 2, 24)); // Max 24px
+  const handleDecrease = () => setFontSize((prev) => Math.max(prev - 2, 10)); // Min 10px
+  return (
+    <ButtonGroup variant="inherit" sx={{ mr: 2 }}>
+      <IconButton onClick={handleDecrease} color="inherit" title="Decrease font size">
+        <TextDecreaseIcon fontSize="small" />
+      </IconButton>
+      <IconButton onClick={handleIncrease} color="inherit" title="Increase font size">
+        <TextIncreaseIcon fontSize="small" />
+      </IconButton>
+    </ButtonGroup>
+  );
+}
+
+
+function Inner({setFontSize}) {
   const [bom, setBom] = React.useState(CycloneDX.emptyBom());
   const [view, setView] = React.useState('metadata');
   const [heading, setHeading] = React.useState('Metadata');
@@ -273,6 +312,9 @@ function Inner() {
             <Typography variant="h6" component="div">
               CycloneDX Editor - {heading}
             </Typography>
+            <Box sx={{ flexGrow: 1 }} />
+            <FontSizeToggle setFontSize={setFontSize}/>
+            <ThemeToggle/>
           </Toolbar>
         </AppBar>
         <GlobalDataView
@@ -293,12 +335,30 @@ function Inner() {
   );
 }
 
+
 export default function App() {
+  const [fontSize, setFontSize] = React.useState(14);
+  const theme = React.useMemo(() => createTheme({
+  
+    colorSchemes: {
+      light: true,
+      dark: true,
+    },
+    typography: {
+      fontSize: fontSize,
+    },
+  }), [fontSize]);
+
   return (
     <GlobalStateProvider>
-      <ConfirmProvider>
-        <Inner/>
-      </ConfirmProvider>
+      <ThemeProvider theme={theme} defaultMode="system">
+        <InitColorSchemeScript />
+        <CssBaseline />
+          <ConfirmProvider>
+            <Inner setFontSize={setFontSize}/>
+          </ConfirmProvider>
+      </ThemeProvider>
     </GlobalStateProvider>
+
   );
 }
