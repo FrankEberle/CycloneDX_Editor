@@ -337,9 +337,9 @@ function Inner({setFontSize}) {
 
 
 export default function App() {
-  const [fontSize, setFontSize] = React.useState(14);
+  const [fontSize, setFontSize] = React.useState((() => {const s = localStorage.getItem("fontSize"); return (s == null ? 14 : Number(s))})());
+
   const theme = React.useMemo(() => createTheme({
-  
     colorSchemes: {
       light: true,
       dark: true,
@@ -348,6 +348,10 @@ export default function App() {
       fontSize: fontSize,
     },
   }), [fontSize]);
+
+  React.useEffect(() => {
+     localStorage.setItem("fontSize", fontSize);
+  }, [fontSize]);
 
   return (
     <GlobalStateProvider>
@@ -359,6 +363,5 @@ export default function App() {
           </ConfirmProvider>
       </ThemeProvider>
     </GlobalStateProvider>
-
   );
 }
