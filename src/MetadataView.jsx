@@ -22,11 +22,13 @@ import Box from '@mui/material/Box';
 
 import MetadataEdit from './MetadataEdit';
 import MetadataEditDialog from './MetadataEditDialog';
+import GlobalStateContext from './GlobalStateContext';
 import * as CycloneDX from './cyclonedx';
 
 export default function MetadataView({metadata, show, bom}) {
   const [meta, setMeta] = React.useState(metadata);
   const [edit, setEdit] = React.useState(undefined);
+  const globalState = React.useContext(GlobalStateContext);
 
   React.useEffect(() => {
     setMeta({...metadata});
@@ -46,6 +48,9 @@ export default function MetadataView({metadata, show, bom}) {
         bom={bom}
         open={edit !== undefined}
         saveAction={() => {
+          if (! CycloneDX.deepCompare(bom["metadata"], edit)) {
+            globalState.set("modified", true);
+          }
           bom["metadata"] = edit;
           setMeta({...edit});
           setEdit(undefined);

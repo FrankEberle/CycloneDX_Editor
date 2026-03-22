@@ -15,6 +15,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import * as React from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -27,16 +28,32 @@ import CloseIcon from '@mui/icons-material/Close';
 import GlobalEdit from './GlobalDataEdit';
 import * as CycloneDX from './cyclonedx';
 import { useFormValidate } from './hooks';
+import GlobalStateContext from './GlobalStateContext';
 
 
 export default function GlobalDataEditDialog({bom, open, saveAction, closeAction}) {
   const {register, validate} = useFormValidate();
+  const globalState = React.useContext(GlobalStateContext);
   
   function onSubmit(event) {
     event.preventDefault();
     event.stopPropagation();
     if (validate()) {
+      const oldValues = Array();
+      const keys = ['serialNumber', 'version'];
+      let modified = false;
+
+      keys.forEach((k) => {oldValues[k] = bom[k]});
       CycloneDX.formDataCopy(bom, new FormData(event.currentTarget));
+      for (let k of keys) {
+        if (bom[k] != oldValues[k]) {
+          modified = true;
+          break;
+        }
+      }
+      if (modified) {
+        globalState.set("modified", true);
+      }
       saveAction();
     }
   }
