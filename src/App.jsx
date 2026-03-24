@@ -50,6 +50,7 @@ import GlobalStateProvider from './GlobalStateProvider';
 import GlobalStateContext from './GlobalStateContext';
 import { loadConfig} from './ConfigLoader';
 import * as CycloneDX from './cyclonedx';
+import AboutDialog from './AboutDialog';
 
 
 function loadTextFile() {
@@ -146,6 +147,7 @@ function Inner({setFontSize}) {
   const [heading, setHeading] = React.useState('Metadata');
   const [showSaveDialog, setShowSaveDialog] = React.useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = React.useState(false);
+  const [showAboutDialog, setShowAboutDialog] = React.useState(false);
   const [err, setErr] = React.useState(undefined);
   const confirm = useConfirm();
   
@@ -202,6 +204,25 @@ function Inner({setFontSize}) {
     }
   }
 
+  const addBurgerMenuItems = Array();
+  if (globalState.getObj("config").templates !== undefined) {
+    addBurgerMenuItems.push(
+      {
+        label: "Load Template",
+        icon: <ListAltIcon/>,
+        action: () => {setShowTemplateDialog(true)},
+      }
+    );
+  }
+  if (globalState.getObj("config").testBom !== undefined) {
+    addBurgerMenuItems.push(
+      {
+        label: "Load Test SBOM",
+        icon: <ScienceIcon/>,
+        action: () => {loader(async () => {return await loadTextFileFromUrl(globalState.getObj("config").testBom)})},
+      }
+    );
+  }
   const burgerMenuItems = [
     [
       {
@@ -218,6 +239,12 @@ function Inner({setFontSize}) {
         label: "Save",
         icon: <SaveIcon/>,
         action: () => {setShowSaveDialog(true)},
+      },
+      ...addBurgerMenuItems,
+      {
+        label: "About",
+        icon: <SaveIcon/>,
+        action: () => {setShowAboutDialog(true)},
       },
     ],
     [
@@ -247,24 +274,6 @@ function Inner({setFontSize}) {
       },
     ]
   ];
-  if (globalState.getObj("config").templates !== undefined) {
-    burgerMenuItems[0].push(
-      {
-        label: "Load Template",
-        icon: <ListAltIcon/>,
-        action: () => {setShowTemplateDialog(true)},
-      }
-    );
-  }
-  if (globalState.getObj("config").testBom !== undefined) {
-    burgerMenuItems[0].push(
-      {
-        label: "Load Test SBOM",
-        icon: <ScienceIcon/>,
-        action: () => {loader(async () => {return await loadTextFileFromUrl(globalState.getObj("config").testBom)})},
-      }
-    );
-  }
 
   return (
     <>
@@ -293,6 +302,10 @@ function Inner({setFontSize}) {
           loader(async () => {return await loadTextFileFromUrl(templateUrl)});
         }}
         cancelAction={() => {setShowTemplateDialog(false)}}
+      />
+      <AboutDialog
+        show={showAboutDialog}
+        closeAction={() => setShowAboutDialog(false)}
       />
       <Box sx={{display: "none"}}><input type="file" id="__loadFileBtn"/></Box>
       <Box
