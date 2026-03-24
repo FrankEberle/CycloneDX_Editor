@@ -371,7 +371,6 @@ function loadDependencies(bom) {
 }
 
 function prepareBom(bom) {
-  bom["_modified"] = false;
   setIfUndefined(bom, "components", Array());
   prepareMetadata(bom);
   foreachComponent(bom, (c) => {
@@ -381,6 +380,12 @@ function prepareBom(bom) {
   bom._flattenedComponents = flattenComponents(bom.components);
   buildComponentLookupTable(bom);
   loadDependencies(bom);
+  return bom;
+}
+
+function updateBom(bom) {
+  bom._flattenedComponents = flattenComponents(bom.components);
+  buildComponentLookupTable(bom);
   return bom;
 }
 
@@ -487,7 +492,6 @@ function finalizeBom(bom) {
   // _flattenedComponents is possibly outdated
   bom._flattenedComponents = flattenComponents(bom.components);
   finalizeDependencies(bom);
-  delete bom._modified;
   // remove properties with name starting with underscore (e.g. _color, _computed) from components
   bom._flattenedComponents.forEach((c) => {
     Object.getOwnPropertyNames(c).forEach((p) => {
@@ -660,6 +664,7 @@ export {
   componentLookup,
   foreachComponent,
   prepareBom,
+  updateBom,
   prepareComponent,
   emptyBom,
   prepareProperty,

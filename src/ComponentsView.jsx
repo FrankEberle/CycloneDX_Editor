@@ -146,7 +146,7 @@ export default function ComponentsView({show, bom}) {
   }
 
   function updateBom(refreshTree) {
-    CycloneDX.prepareBom(bom);
+    CycloneDX.updateBom(bom);
     if (refreshTree) {
       setComponentsList([...bom.components]);
     }
