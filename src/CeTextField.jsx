@@ -18,13 +18,14 @@
 import React from 'react';
 import TextField from '@mui/material/TextField';
 
-export default function CeTextField({label, name, defaultValue, required, readOnly, autoFocus, ref, regex, errText, rows, maxRows, parentRef}) {
+export default function CeTextField({label, name, defaultValue, required, readOnly, autoFocus, ref, regex, errText, rows, maxRows, parentRef, disabled}) {
   const [isValid, setIsValid] = React.useState(true);
   const [helperText, setHelperText] = React.useState(undefined);
   const inputRef = React.useRef(null);
   readOnly = readOnly !== undefined ? readOnly : false;
   required = required !== undefined ? required : false;
   autoFocus = autoFocus !== undefined ? autoFocus : false;
+  disabled = disabled !== undefined ? disabled : false;
   
 
   React.useImperativeHandle(ref, () => {
@@ -66,6 +67,7 @@ export default function CeTextField({label, name, defaultValue, required, readOn
           multiline={rows > 1 || maxRows > 1}
           rows={rows}
           maxRows={maxRows}
+          disabled={disabled}
           slotProps={{
               input: {
                   readOnly: readOnly,
@@ -92,6 +94,7 @@ export default function CeTextField({label, name, defaultValue, required, readOn
         rows={rows}
         maxRows={maxRows}
         helperText={helperText}
+        disabled={disabled}
         slotProps={{
             input: {
                 readOnly: readOnly,

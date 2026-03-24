@@ -38,6 +38,10 @@ function getComponentsTableColumns(config) {
         },
       },
       {
+        field: "group",
+        headerName: "Group",
+      },
+      {
         field: "type",
         headerName: "Type",
       },

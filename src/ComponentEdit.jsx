@@ -71,6 +71,12 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
                         autoFocus={true}
                         defaultValue={CycloneDX.getValue(component, "name", "")}
                     />
+                    <CeTextField
+                        label='Group'
+                        name='group'
+                        readOnly={readOnly}
+                        defaultValue={CycloneDX.getValue(component, "group", "")}
+                    />
                     <CeDropdownField
                         label='Type'
                         name='type'
@@ -95,6 +101,13 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
                         name='cpe'
                         readOnly={readOnly}
                         defaultValue={CycloneDX.getValue(component, "cpe", "")}
+                    />
+                    <CeTextField
+                        label='bom-ref'
+                        disabled={true}
+                        name='bom-ref'
+                        readOnly={true}
+                        defaultValue={CycloneDX.getValue(component, "bom-ref", "")}
                     />
                 </Stack>
             </FormControl>
