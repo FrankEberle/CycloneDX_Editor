@@ -102,7 +102,7 @@ export default function EditTable({items, title, colSpec, noTitle, noTopMargin, 
                 <TableCell align='right'><IconButton aria-label="Add" onClick={addAction}><AddIcon/></IconButton></TableCell>
               </Conditional>
             </TableRow>
-          </TableHead>          
+          </TableHead>
           <TableBody>
             <Conditional show={filteredItems.length > 0}>
             { filteredItems.map((item, idx) => {
@@ -117,7 +117,15 @@ export default function EditTable({items, title, colSpec, noTitle, noTopMargin, 
                         value = cs.getter(item);
                       }
                       return (
-                        <TableCell key={cs.label + "_" + item._id}>{value}</TableCell>
+                        <TableCell
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                          key={cs.label + "_" + item._id}
+                        >
+                          {value}
+                          </TableCell>
                       );
                     })
                   }
