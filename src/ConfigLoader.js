@@ -33,6 +33,18 @@ const utils = {
     }
     return undefined;
   },
+
+  escapeHTML: (str) => {
+    const p = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+      '/': '&#x2F;'
+    };
+    return str.replace(/[&<>"'/]/g, s => p[s]);
+  }
 }
 window.CycloneDX = utils;
 
@@ -80,6 +92,7 @@ async function loadConfig() {
         }
         colDef.func = col.func;
         colDef.field = "_computed_func_" + String(columns.length);
+        colDef.html = col.html !== undefined ? col.html : false;
       } else if (col.field !== undefined) {
         if (typeof(col.field) != "string") {
           console.log("Config error, componentsTableColumns[%d]: 'field' has invalid type'", i);

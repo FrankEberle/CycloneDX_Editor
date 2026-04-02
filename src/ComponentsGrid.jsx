@@ -56,15 +56,22 @@ function getComponentsTableColumns(config) {
         field: col.field,
       }
       if (col["func"] !== undefined) {
-        colDef["valueGetter"] = (value, row) => {
-          try {
-            return col.func(row)
+        try {
+          if (col.html === true) {
+            colDef["renderCell"] = (value, row) => {
+              const html = col.func(row);
+              return (
+                <div dangerouslySetInnerHTML={{ __html: html }} />
+              )
+            }
+          } else {
+            colDef["valueGetter"] = (value, row) => { return col.func(row) };
           }
-          catch (e) {
-            console.log("Function for column '%s' failed; %s", col.headerName, e);
-            return "!! ERROR !!";
-          }
-        };
+        }
+        catch (e) {
+          console.log("Function for column '%s' failed; %s", col.headerName, e);
+          return "!! ERROR !!";
+        }
       }
       columns.push(colDef);
     });
@@ -121,6 +128,7 @@ export default function ComponentsGrid({bom, setComponent, setEditComponent}) {
 
   return(
     <DataGrid
+      getRowHeight={() => 'auto'}
       apiRef={apiRef}
       getRowId={(r) => {return r._id}}
       sortModel={globalState.get("compGridSortModel")}
