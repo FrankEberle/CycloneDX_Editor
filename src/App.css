@@ -25,3 +25,9 @@ html, body {
   text-align: left;
   height: 100%;
 }
+
+.no-wrap-cell {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}

@@ -55,22 +55,33 @@ function getComponentsTableColumns(config) {
         headerName: col.headerName,
         field: col.field,
       }
+      if (col.no_wrap) {
+        colDef["cellClassName"] = "no-wrap-cell";
+      }
       if (col["func"] !== undefined) {
-        try {
-          if (col.html === true) {
-            colDef["renderCell"] = (value, row) => {
-              const html = col.func(row);
+        if (col.html === true) {
+          colDef["renderCell"] = (data) => {
+            try {
+              const html = col.func(data.row);
               return (
                 <div dangerouslySetInnerHTML={{ __html: html }} />
               )
             }
-          } else {
-            colDef["valueGetter"] = (value, row) => { return col.func(row) };
+            catch(e) {
+              console.log("Function for column '%s' failed; %s", col.headerName, e);
+              return "!! ERROR !!";
+            }
           }
-        }
-        catch (e) {
-          console.log("Function for column '%s' failed; %s", col.headerName, e);
-          return "!! ERROR !!";
+        } else {
+          colDef["valueGetter"] = (value, row) => {
+            try {
+              return col.func(row);
+            }
+            catch (e) {
+              console.log("Function for column '%s' failed; %s", col.headerName, e);
+              return "!! ERROR !!";
+            }
+          };
         }
       }
       columns.push(colDef);

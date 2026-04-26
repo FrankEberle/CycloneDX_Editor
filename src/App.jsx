@@ -25,6 +25,7 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SaveIcon from '@mui/icons-material/Save';
 import ClearIcon from '@mui/icons-material/Clear';
 import ScienceIcon from '@mui/icons-material/Science';
+import InfoIcon from '@mui/icons-material/Info';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import GridViewIcon from '@mui/icons-material/GridView';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
@@ -243,7 +244,7 @@ function Inner({setFontSize}) {
       ...addBurgerMenuItems,
       {
         label: "About",
-        icon: <SaveIcon/>,
+        icon: <InfoIcon/>,
         action: () => {setShowAboutDialog(true)},
       },
     ],

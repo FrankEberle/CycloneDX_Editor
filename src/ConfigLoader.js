@@ -86,6 +86,7 @@ async function loadConfig() {
         continue;
       }
       colDef.headerName = col.headerName;
+      colDef.no_wrap = col.no_wrap !== undefined ? col.no_wrap : false;
       if (col["func"] !== undefined) {
         if (col["field"] !== undefined) {
           console.log("Config warning, componentsTableColumns[%d]: 'field' and 'func' are mutual exclusive", i);
