@@ -16,8 +16,8 @@
  */
 
 import * as React from 'react';
-import SpeedDial from '@mui/material/SpeedDial';
 import EditIcon from '@mui/icons-material/Edit';
+import AutoHideSpeedDial from './AutoHideSpeedDial';
 import Box from '@mui/material/Box';
 
 import MetadataEdit from './MetadataEdit';
@@ -36,7 +36,7 @@ export default function MetadataView({metadata, show, bom}) {
   
   return (
     <Box sx={{display: show ? 'flex' : 'none', mt: 1, p: 2, flexDirection: 'row', flexGrow: 1, minHeight: 0, overflow: 'auto', visibility: 'visible'}}>
-      <SpeedDial
+      <AutoHideSpeedDial
         ariaLabel='Component Actions'
         sx={{ position: 'absolute', bottom: 20, left: 20 }}
         icon={<EditIcon />}

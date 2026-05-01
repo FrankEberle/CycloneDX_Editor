@@ -17,7 +17,7 @@
 
 import * as React from 'react';
 import Box from '@mui/material/Box';
-import SpeedDial from '@mui/material/SpeedDial';
+import AutoHideSpeedDial from './AutoHideSpeedDial';
 import SpeedDialAction from '@mui/material/SpeedDialAction';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddBoxIcon from '@mui/icons-material/AddBox';
@@ -40,7 +40,7 @@ import * as CycloneDX from './cyclonedx';
 function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchAction}) {
   const [isOpen, setIsOpen] = React.useState(false);
   return (
-    <SpeedDial
+    <AutoHideSpeedDial
       ariaLabel='Component Actions'
       sx={{ position: 'absolute', bottom: 20, left: 20 }}
       icon={<SpeedDialIcon />}
@@ -102,7 +102,7 @@ function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchActi
           }}
         />
 
-    </SpeedDial>
+    </AutoHideSpeedDial>
   );
 }
 
