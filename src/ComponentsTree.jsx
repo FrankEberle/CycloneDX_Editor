@@ -48,12 +48,8 @@ export default function ComponentsTree({bom, componentsList, component, setCompo
   const globalState = React.useContext(GlobalStateContext);
   
   function getItemColor(x) {
-    let color = primaryTextColor;
     const comp = CycloneDX.componentLookup(bom, x.itemId);
-    if (comp !== undefined) {
-      color = comp._color;
-    }
-    return color;
+    return comp?._color ?? primaryTextColor;
   }
 
   return (

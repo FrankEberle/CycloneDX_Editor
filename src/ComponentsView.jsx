@@ -213,17 +213,13 @@ export default function ComponentsView({show, bom}) {
   }
 
   function getColor(component) {
-    let color = primaryTextColor;
     try {
-      color = config["componentColorFunc"](component);
-      if (color === undefined) {
-        color = primaryTextColor;
-      }
+      return config["componentColorFunc"](component);
     }
     catch(err) {
       console.log("Failed to get color: %o", err);
     }
-    return color;
+    return undefined;
   }
 
   function storeComponent() {

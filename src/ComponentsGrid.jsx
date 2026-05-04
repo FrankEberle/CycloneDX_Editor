@@ -18,13 +18,14 @@
 import * as React from 'react';
 import { DataGrid, useGridApiRef } from '@mui/x-data-grid';
 
+import { useTheme } from '@mui/material/styles';
 import shajs from 'sha.js';
 
 import GlobalStateContext from './GlobalStateContext';
 import * as CycloneDX from './cyclonedx';
 
 
-function getComponentsTableColumns(config) {
+function getComponentsTableColumns(config, primaryTextColorRef) {
     const columns = [
       {
         field: "_level",
@@ -34,7 +35,7 @@ function getComponentsTableColumns(config) {
         field: "name",
         headerName: "Name",
         renderCell: (params) => {
-          return (<span style={{color: params.row._color}}>{params.value}</span>)
+          return (<span style={{color: params.row._color ?? primaryTextColorRef.current}}>{params.value}</span>)
         },
       },
       {
@@ -94,6 +95,9 @@ export default function ComponentsGrid({bom, setComponent, setEditComponent}) {
   const LOCAL_STATE_KEY = "compGrid";
   const globalState = React.useContext(GlobalStateContext);
   const config = globalState.get("config");
+  const primaryTextColor = useTheme().palette.text.primary;
+  const primaryTextColorRef = React.useRef(primaryTextColor);
+  primaryTextColorRef.current = primaryTextColor;
   const [tableColumns, setTableColumns] = React.useState(undefined);
   const apiRef = useGridApiRef()
   
@@ -119,7 +123,7 @@ export default function ComponentsGrid({bom, setComponent, setEditComponent}) {
   }
 
   if (tableColumns === undefined) {
-    const columns = getComponentsTableColumns(config);
+    const columns = getComponentsTableColumns(config, primaryTextColorRef);
     const hash = shajs('sha256').update(JSON.stringify(columns)).digest('hex');
     const oldHash = loadState("oldHash");
     if (hash !== oldHash) {
