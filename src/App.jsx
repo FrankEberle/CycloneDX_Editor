@@ -316,6 +316,19 @@ function Inner({setFontSize}) {
           height: '100vh', // Volle Viewport-Höhe
           overflow: 'hidden' // Verhindert Scrollen auf der Hauptebene
         }}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const file = e.dataTransfer.files[0];
+          if (file !== undefined) {
+            loader(() => new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => reject(new Error("Failed to read file"));
+              reader.readAsText(file);
+            }));
+          }
+        }}
       >
         <AppBar position="static">
           <Toolbar>
