@@ -92,14 +92,191 @@ The application can be configured via a Javascript file named *config.js*. The f
 must be located in the *src* subfolder in a development environment. In a production
 environment the file must be stored in the subfolder *assets*.
 
-The configuration file must export a single object providing the configuration options
-as the object's properties:
+The configuration file must export a single object providing the configuration options as the object's properties:
 ```
 export default {
 }
 ```
 
-**More content will come ...**
+The supported configuration properties are described in the sub-sections below.
+
+### version (string)
+Version of the configuration. If specified the version string is shown in the about dialog.
+
+### testBom (string)
+The property *testBom* defines an URL of a SBOM. If specified, the menu option *Load Test SBOM*
+shows up in the main menu. If selected, the SBOM is loaded from the defined URL. This allows
+to load quickly a test SBOM during development of the app (or for other purposes).
+
+**Hint:** For easy deployment the SBOM should be stored in the *public* folder and just be specified via its
+filename.
+
+### templates (array of objects)
+The property *templates* allows to specify a set of SBOMs which can be used as templates
+when authoring SBOMs. When specified the menu option *Load Template* shows up in the
+main menu. When the menu option is selected a dialog is displayed. The dialog provides
+a list to choose one of the templates to be loaded.
+
+Each object in the array defines one template. The object must contain the following
+properties:
+
+* name (string): The name of the template shown in the dialog.
+* url (string): The URL of the SBOM (see the hint for the test SBOM above)
+
+Example:
+```
+[
+  {
+    name: "Template 1",
+    url: "template1.json"
+  },
+  {
+    name: "Template 2",
+    url: "template2.json"
+  }
+]
+```
+
+### componentsTableColumns (array of objects)
+Defines additional columns to be shown in the components table. Each object defines one column and must contain the following properties:
+
+* `headerName` (string, required): The column header label.
+* `field` (string): The name of a component field to display. Supports dot notation to access nested fields (e.g. `manufacturer.name`).
+* `func` (function): A function receiving the component object and returning the cell value. Mutually exclusive with `field`.
+* `html` (boolean): If `true`, the return value of `func` is rendered as HTML. Only valid in combination with `func`. Defaults to `false`.
+* `no_wrap` (boolean): If `true`, the cell content is not wrapped. Defaults to `false`.
+
+The helper object `window.CycloneDX` is available inside `func` and provides the following utilities:
+* `hasProperty(component, name)`: Returns `true` if the component has a property with the given name, otherwise `false`.
+* `getProperty(component, name)`: Returns the value of the property with the given name, or `undefined`.
+* `escapeHTML(str)`: Escapes a string for safe use in HTML output.
+
+Example:
+```js
+componentsTableColumns: [
+  {
+    headerName: "PURL",
+    field: "purl"
+  },
+  {
+    headerName: "Manufacturer",
+    field: "manufacturer.name"
+  },
+  {
+    headerName: "Checked",
+    func: (c) => window.CycloneDX.getProperty(c, "my:checked")
+  },
+  {
+    headerName: "Licenses",
+    html: true,
+    func: (c) => c.licenses.map(l => l.license.id ?? l.license.name).join("<br/>")
+  }
+]
+```
+
+### componentColorFunc (function)
+A function that receives a component object and returns a CSS color string. The color is applied to the component name in the components table and components tree. Return `undefined` to use the default color.
+
+Example:
+```js
+componentColorFunc: (c) => {
+  if (c.type === "application") return "#ff0000";
+  if (c.purl) return "#00ff00";
+}
+```
+
+### Properties Configuration
+The properties `metaComponentProperties`, `licenseProperties`, and `componentProperties` each accept an array of property definition objects. They control which custom input fields are shown when editing the metadata component, a license, or a component respectively.
+
+Each property definition object supports the following fields:
+
+* `label` (string or array of two strings, required): The label shown next to the input field. For `tuple` type, provide an array with singular and plural form (e.g. `["Product", "Products"]`).
+* `name` (string): The CycloneDX property name used as key in the `properties` array. Not used for `tuple` type.
+* `type` (string, required): The type of the input field. Supported values:
+  * `text`: Single-line text input. Set `multiline: true` for a multi-line text area.
+  * `enum`: Dropdown selection. Requires an `options` array.
+  * `tuple`: A table of records, each consisting of multiple fields. Requires a `fields` array.
+* `required` (boolean): If `true`, the field must not be empty. Defaults to `false`.
+* `options` (array of strings): The selectable values. Only used for `enum` type.
+* `emptyOpt` (boolean): If `true`, an empty option is added to the dropdown. Only used for `enum` type. Defaults to `false`.
+* `multiline` (boolean): If `true`, a multi-line text area is rendered. Only used for `text` type. Defaults to `false`.
+* `list` (boolean): If `true`, the property is shown in list views (e.g. the license list). Defaults to `false`.
+* `fields` (array of property definition objects): The fields of a tuple record. Only used for `tuple` type. Supported field types within a tuple are `text` and `enum`.
+
+### metaComponentProperties (array of objects)
+Defines custom input fields shown when editing the metadata component (i.e. the top-level component describing the product itself). See [Properties Configuration](#properties-configuration) above.
+
+Example:
+```js
+metaComponentProperties: [
+  {
+    label: "Product Line",
+    name: "my:productLine",
+    type: "enum",
+    emptyOpt: true,
+    options: ["hardware", "software", "firmware"]
+  }
+]
+```
+
+### licenseProperties (array of objects)
+Defines custom input fields shown when editing a license entry of a component. See [Properties Configuration](#properties-configuration) above.
+
+Example:
+```js
+licenseProperties: [
+  {
+    label: "Approved",
+    name: "my:approved",
+    type: "enum",
+    options: ["no", "yes"],
+    list: true
+  }
+]
+```
+
+### componentProperties (array of objects)
+Defines custom input fields shown when editing a component. See [Properties Configuration](#properties-configuration) above.
+
+Example:
+```js
+componentProperties: [
+  {
+    label: "3rd-Party Type",
+    name: "my:3rdPartyType",
+    type: "enum",
+    emptyOpt: true,
+    required: true,
+    options: ["oss", "commercial", "internal"]
+  },
+  {
+    label: "Notes",
+    name: "my:notes",
+    type: "text",
+    multiline: true
+  },
+  {
+    label: ["Order Reference", "Order References"],
+    type: "tuple",
+    fields: [
+      {
+        label: "Order Number",
+        name: "my:orderNumber",
+        type: "text",
+        required: true
+      },
+      {
+        label: "Product Name",
+        name: "my:productName",
+        type: "text",
+        required: true
+      }
+    ]
+  }
+]
+```
+
+
 
 ## Deployment
 
