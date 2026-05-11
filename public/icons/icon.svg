@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="18" fill="#1565C0"/>
+
+  <!-- Document body -->
+  <rect x="22" y="14" width="72" height="90" rx="5" fill="#E3F2FD"/>
+
+  <!-- Folded corner -->
+  <polygon points="78,14 94,30 78,30" fill="#90CAF9"/>
+  <polygon points="78,14 94,14 94,30" fill="#BBDEFB"/>
+
+  <!-- "S" badge for SBOM -->
+  <circle cx="95" cy="95" r="22" fill="#F57C00"/>
+  <text x="95" y="102" font-family="Arial,sans-serif" font-weight="bold" font-size="26"
+        text-anchor="middle" fill="white">S</text>
+
+  <!-- List lines with checkmarks -->
+  <!-- Row 1 -->
+  <rect x="34" y="42" width="8" height="8" rx="2" fill="none" stroke="#1565C0" stroke-width="1.5"/>
+  <polyline points="35.5,46 37.5,48.5 41,43.5" fill="none" stroke="#1565C0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="47" y="43" width="30" height="5" rx="2.5" fill="#90CAF9"/>
+
+  <!-- Row 2 -->
+  <rect x="34" y="56" width="8" height="8" rx="2" fill="none" stroke="#1565C0" stroke-width="1.5"/>
+  <polyline points="35.5,60 37.5,62.5 41,57.5" fill="none" stroke="#1565C0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="47" y="57" width="24" height="5" rx="2.5" fill="#90CAF9"/>
+
+  <!-- Row 3 -->
+  <rect x="34" y="70" width="8" height="8" rx="2" fill="none" stroke="#1565C0" stroke-width="1.5"/>
+  <rect x="47" y="71" width="28" height="5" rx="2.5" fill="#BBDEFB"/>
+
+  <!-- Row 4 -->
+  <rect x="34" y="84" width="8" height="8" rx="2" fill="none" stroke="#1565C0" stroke-width="1.5"/>
+  <rect x="47" y="85" width="20" height="5" rx="2.5" fill="#BBDEFB"/>
+</svg>

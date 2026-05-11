@@ -24,6 +24,14 @@ npm run build
 ```
 The result of the build is stored in the directory *dist*.
 
+To build the Chrome browser extension, use the following command instead:
+```
+cd CycloneDX_Editor
+npm install
+npm run build:extension
+```
+The result is stored in the directory *dist-extension*.
+
 ## Development
 ```
 cd CycloneDX_Editor
@@ -306,3 +314,19 @@ Any web server which is able to serve static files can be used to deploy the app
 The contents of the directory *dist* must be copied into the document root directory of
 the server. The directory structure inside of *dist* must be retained when coping the files.
 If the application should be deployed to a subdirectory, the property *base* inside *vite.config.js* must be adopted before building the application.
+
+### Chrome Browser Extension
+The application can be deployed as a Chrome browser extension. The extension opens the editor
+in a new browser tab when the extension icon is clicked.
+
+To install the extension in Chrome:
+1. Build the extension using `npm run build:extension` (see [Build](#build) above).
+2. Open Chrome and navigate to `chrome://extensions`.
+3. Enable *Developer mode* using the toggle in the top right corner.
+4. Click *Load unpacked* and select the *dist-extension* directory.
+
+The extension will appear in the Chrome toolbar. Clicking its icon opens the CycloneDX Editor
+in a new tab.
+
+**Note:** When using the extension, the configuration is compiled into the extension bundle.
+To change the configuration, edit *src/config.js* and rebuild the extension.

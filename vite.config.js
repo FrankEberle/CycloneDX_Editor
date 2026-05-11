@@ -3,12 +3,22 @@ import react from '@vitejs/plugin-react'
 
 import packageJson from './package.json'
 
+const isExtension = process.env.BUILD_TARGET === 'extension';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: "/",
+  base: isExtension ? './' : '/',
   define: {
     'import.meta.env.PACKAGE_VERSION': JSON.stringify(packageJson.version),
-  }
+    'import.meta.env.IS_EXTENSION': JSON.stringify(isExtension),
+  },
+  ...(isExtension && {
+    build: {
+      outDir: 'dist-extension',
+      rollupOptions: {
+        input: { main: 'index.html' },
+      },
+    },
+  }),
 })

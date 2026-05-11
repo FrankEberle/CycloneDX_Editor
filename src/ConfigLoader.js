@@ -53,8 +53,14 @@ async function loadConfig() {
   // https://react.dev/learn/passing-data-deeply-with-context
   let config;
   try {
-    const config_file = "config";
-    const module = await import(/* @vite-ignore */ `./${config_file}.js`);
+    let module;
+    if (import.meta.env.IS_EXTENSION) {
+      // Dynamic import doesn't work in Chrome extensions — use static import
+      module = await import('./config.js');
+    } else {
+      const config_file = "config";
+      module = await import(/* @vite-ignore */ `./${config_file}.js`);
+    }
     config = module.default;
   }
   catch (error) {
