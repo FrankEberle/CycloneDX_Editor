@@ -160,6 +160,16 @@ function Inner({setFontSize}) {
     });
   }, []);
 
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (globalState.getBool("modified")) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [globalState]);
+
   if (! globalState.has("config")) {
     return (<></>);
   }
