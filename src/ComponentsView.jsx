@@ -24,10 +24,12 @@ import AddBoxIcon from '@mui/icons-material/AddBox';
 import EditIcon from '@mui/icons-material/Edit';
 import SpeedDialIcon from '@mui/material/SpeedDialIcon';
 import GridViewIcon from '@mui/icons-material/GridView';
+import AutoAwesomeMotionIcon from '@mui/icons-material/AutoAwesomeMotion';
 import { useTreeViewApiRef} from '@mui/x-tree-view/hooks';
 import { useTheme } from '@mui/material/styles';
 
 import NewComponentDialog from './NewComponentDialog';
+import ChangeParentDialog from './ChangeParentDialog';
 import ComponentEditDialog from './ComponentEditDialog';
 import YesNoDialog from './YesNoDialog';
 import GlobalStateContext from './GlobalStateContext';
@@ -37,7 +39,7 @@ import { Conditional } from './helper';
 import * as CycloneDX from './cyclonedx';
 
 
-function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchAction}) {
+function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchAction, changeParentAction}) {
   const [isOpen, setIsOpen] = React.useState(false);
   return (
     <AutoHideSpeedDial
@@ -89,6 +91,20 @@ function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchActi
           }}
         />
       <SpeedDialAction
+          sx={{display: changeParentAction === undefined ? 'none' : 'block'}}
+          key={'changeParent'}
+          icon=<AutoAwesomeMotionIcon/>
+          slotProps={{
+            tooltip: {
+              title: 'Change Parent',
+            },
+          }}
+          onClick={() => {
+            setIsOpen(false);
+            changeParentAction();
+          }}
+      />
+      <SpeedDialAction
           key={'switchView'}
           icon=<GridViewIcon/>
           slotProps={{
@@ -114,6 +130,7 @@ export default function ComponentsView({show, bom}) {
   const [editComponent, setEditComponent] = React.useState(undefined);
   const [newCmpOpen, setNewCmpOpen] = React.useState(false);
   const [confirmDelOpen, setConfirmDelOpen] = React.useState(false);
+  const [changeParentOpen, setChangeParentOpen] = React.useState(false);
   const [view, setView] = React.useState("table");
   const primaryTextColor = useTheme().palette.text.primary;
 
@@ -270,6 +287,12 @@ export default function ComponentsView({show, bom}) {
         okAction={newCmpDialogSave}
         cancelAction={() => {setNewCmpOpen(false)}}
       />
+      <ChangeParentDialog
+        open={changeParentOpen}
+        components = {undefined}
+        okAction={() => {}}
+        cancelAction={() => {setChangeParentOpen(false)}}
+      />
       <YesNoDialog
         open={confirmDelOpen}
         title="Confirmation"
@@ -289,6 +312,7 @@ export default function ComponentsView({show, bom}) {
           setEditComponent(CycloneDX.deepCopy(component));
         }}
         deleteAction={component === null ? undefined : () => {setConfirmDelOpen(true)}}
+        changeParentAction={component === null ? undefined : () => {setChangeParentOpen(true)}}
         viewSwitchAction={switchView}
       />
       <Conditional show={view == "tree"}>
