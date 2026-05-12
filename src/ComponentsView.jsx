@@ -274,6 +274,27 @@ export default function ComponentsView({show, bom}) {
     setEditComponent(undefined);
   }
 
+  function changeParent(newParentId) {
+    // prevent moving a component into one of its own descendants
+    if (CycloneDX.isDescendant(component, newParentId)) {
+      return;
+    }
+    // remove component from current parent
+    CycloneDX.foreachComponent(bom, (c, base, idx) => {
+      if (c._id === component._id) {
+        base.components.splice(idx, 1);
+        return [false, undefined];
+      }
+      return [true, undefined];
+    });
+    // find new parent and add component
+    const newParent = CycloneDX.componentLookup(bom, newParentId) ?? bom;
+    if (newParent.components === undefined) newParent.components = [];
+    newParent.components.push(component);
+    updateBom(true);
+    globalState.set("modified", true);
+    setChangeParentOpen(false);
+  }
 
   if (! show) {
     return <></>;
@@ -289,8 +310,9 @@ export default function ComponentsView({show, bom}) {
       />
       <ChangeParentDialog
         open={changeParentOpen}
-        components = {undefined}
-        okAction={() => {}}
+        componentsList={componentsList}
+        currentComponent={component}
+        okAction={changeParent}
         cancelAction={() => {setChangeParentOpen(false)}}
       />
       <YesNoDialog

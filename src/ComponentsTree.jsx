@@ -24,24 +24,6 @@ import GlobalStateContext from './GlobalStateContext';
 import * as CycloneDX from './cyclonedx';
 
 
-function treeViewGetItemId(component) {
-  return component["_id"];
-}
-
-function treeViewGetItemLabel(component) {
-  if ((component["version"] !== undefined) && (component["version"] != "")) {
-    return `${component.name} (${component.version})`;
-  }
-  return component.name;
-}
-
-function treeViewGetItemChildren(component) {
-  if (component.components !== undefined) {
-    return component.components;
-  }
-  return new Array();
-}
-
 
 export default function ComponentsTree({bom, componentsList, component, setComponent, setEditComponent, treeApiRef}) {
   const primaryTextColor = useTheme().palette.text.primary;
@@ -83,9 +65,9 @@ export default function ComponentsTree({bom, componentsList, component, setCompo
               }
             })
           }}
-          getItemId={treeViewGetItemId}
-          getItemLabel={treeViewGetItemLabel}
-          getItemChildren={treeViewGetItemChildren}
+          getItemId={CycloneDX.treeViewGetItemId}
+          getItemLabel={CycloneDX.treeViewGetItemLabel}
+          getItemChildren={CycloneDX.treeViewGetItemChildren}
           expansionTrigger='iconContainer'
           onItemFocus={(event, itemId) => {
             // Set item as selected when it is focused, this allows

@@ -659,10 +659,35 @@ function storeCustomDataProp(properties, name, value) {
 
 }
 
+function isDescendant(component, targetId) {
+  if (component._id === targetId) return true;
+  if (component.components === undefined) return false;
+  return component.components.some((c) => isDescendant(c, targetId));
+}
+
+function treeViewGetItemId(component) {
+  return component["_id"];
+}
+
+function treeViewGetItemLabel(component) {
+  if ((component["version"] !== undefined) && (component["version"] != "")) {
+    return `${component.name} (${component.version})`;
+  }
+  return component.name;
+}
+
+function treeViewGetItemChildren(component) {
+  if (component.components !== undefined) {
+    return component.components;
+  }
+  return new Array();
+}
+
 export {
   getComponentTypes,
   componentLookup,
   foreachComponent,
+  isDescendant,
   prepareBom,
   updateBom,
   prepareComponent,
@@ -688,5 +713,8 @@ export {
   getPatchTypes,
   preparePatch,
   preparePatchIssue,
-  getPatchIssueTypes
+  getPatchIssueTypes,
+  treeViewGetItemId,
+  treeViewGetItemLabel,
+  treeViewGetItemChildren,
 };
