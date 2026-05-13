@@ -106,19 +106,25 @@ export default function DependencyGraphView({ show, bom }) {
 
     // --- Build cytoscape elements ---
 
-    const nodeElements = allComponents.map(({ component, isMeta }) => ({
-      group: 'nodes',
-      data: {
-        id: component._id,
-        label: getNodeLabel(component),
-        color: getColor(component),
-        bg: primaryBg,
-        border: borderColor,
-        shape: isMeta ? 'ellipse' : 'roundrectangle',
-        expandable: edgeMap.has(component._id) ? 1 : 0,
-      },
-      style: { display: rootIds.has(component._id) ? 'element' : 'none' },
-    }));
+    const nodeElements = allComponents.map(({ component, isMeta }) => {
+      const isVisible = rootIds.has(component._id);
+      const targets = edgeMap.get(component._id) ?? [];
+      // A node is expandable if it has any outgoing edges (all initially hidden)
+      const expandable = targets.length > 0 ? 1 : 0;
+      return {
+        group: 'nodes',
+        data: {
+          id: component._id,
+          label: getNodeLabel(component),
+          color: getColor(component),
+          bg: primaryBg,
+          border: borderColor,
+          shape: isMeta ? 'ellipse' : 'roundrectangle',
+          expandable,
+        },
+        style: { display: isVisible ? 'element' : 'none' },
+      };
+    });
 
     const edgeElements = [];
     edgeMap.forEach((targets, sourceId) => {
@@ -206,10 +212,19 @@ export default function DependencyGraphView({ show, bom }) {
           collapseNode(tid);
         }
       });
-      cy.getElementById(sourceId).data('expandable', 1);
+      updateExpandable(sourceId);
     }
 
-    // Snapshot current visibility state (set of visible element IDs)
+    // Update expandable flag based on current visibility of outgoing edges
+    function updateExpandable(nodeId) {
+      const targets = edgeMap.get(nodeId);
+      if (!targets) return;
+      const anyHiddenEdge = targets.some(
+        (tid) => cy.getElementById(`${nodeId}->${tid}`).style('display') === 'none'
+      );
+      cy.getElementById(nodeId).data('expandable', anyHiddenEdge ? 1 : 0);
+    }
+
     function snapshotVisibility() {
       const visible = new Set();
       cy.elements().forEach((el) => {
@@ -224,12 +239,7 @@ export default function DependencyGraphView({ show, bom }) {
         el.style('display', snapshot.has(el.id()) ? 'element' : 'none');
       });
       cy.nodes().forEach((node) => {
-        const targets = edgeMap.get(node.id());
-        if (!targets) return;
-        const anyHidden = targets.some(
-          (tid) => cy.getElementById(tid).style('display') === 'none'
-        );
-        node.data('expandable', anyHidden ? 1 : 0);
+        updateExpandable(node.id());
       });
     }
 
@@ -251,21 +261,18 @@ export default function DependencyGraphView({ show, bom }) {
       if (!targets) return;
 
       const hiddenTargets = targets.filter(
-        (tid) => cy.getElementById(tid).style('display') === 'none'
+        (tid) => cy.getElementById(`${sourceId}->${tid}`).style('display') === 'none'
       );
 
       if (hiddenTargets.length > 0) {
-        // Expand: show hidden children
+        // Expand: show hidden children and their edges
         hiddenTargets.forEach((tid) => {
           cy.getElementById(tid).style('display', 'element');
-        });
-        targets.forEach((tid) => {
           cy.getElementById(`${sourceId}->${tid}`).style('display', 'element');
         });
-        const allVisible = targets.every(
-          (tid) => cy.getElementById(tid).style('display') !== 'none'
-        );
-        if (allVisible) evt.target.data('expandable', 0);
+        // Update expandable flag for source and all newly visible children
+        updateExpandable(sourceId);
+        hiddenTargets.forEach((tid) => updateExpandable(tid));
         // Position new children in a circle around the parent
         const parentPos = evt.target.position();
         const radius = 150 + hiddenTargets.length * 20;
