@@ -276,6 +276,7 @@ function prepareMetadata(bom) {
   setIfUndefined(bom, "metadata", {});
   let metadata = bom["metadata"];
   setIfUndefined(metadata, "component", {});
+  setIdIfUndefined(metadata.component);
   prepareComponent(metadata.component, true);
   setIfUndefined(metadata, "properties", Array());
   metadata.properties.forEach((p) => {prepareProperty(p)})
@@ -501,6 +502,12 @@ function finalizeBom(bom) {
     });
     delete c._color;
   });
+  // remove _id from metadata.component
+  if (bom.metadata?.component) {
+    Object.getOwnPropertyNames(bom.metadata.component).forEach((p) => {
+      if (p.startsWith("_")) delete bom.metadata.component[p];
+    });
+  }
   delete bom._flattenedComponents;
   removeEmptyFields(bom);
   if ((bom["serialNumber"] === undefined) || bom.serialNumber == "") {
@@ -601,7 +608,12 @@ async function validateBom(bom) {
 }
 
 function formDataCopy(targetObj, formData) {
+    // Track keys that have already been written to detect multi-value fields
+    // (e.g. MUI Select with multiple=true submits one FormData entry per selected item)
+    const seen = new Map();
     formData.entries().forEach(([key, value]) => {
+        // Navigate to the nested target object using dot-notation in the key
+        // e.g. "component.manufacturer.name" -> targetObj.component.manufacturer
         let target = targetObj;
         const keyParts = key.split(".");
         for (let i = 0; i < keyParts.length -1; i++) {
@@ -612,6 +624,8 @@ function formDataCopy(targetObj, formData) {
         }
         let lastKey = keyParts[keyParts.length - 1];
         if (lastKey.startsWith("__prop_")) {
+          // Keys prefixed with "__prop_" represent CycloneDX properties (key/value pairs).
+          // Strip the prefix to get the property name and upsert it in the properties array.
           lastKey = lastKey.substring(7);
           let found = false;
           if (target["properties"] === undefined) {
@@ -631,7 +645,15 @@ function formDataCopy(targetObj, formData) {
             }));
           }
         } else {
-          target[lastKey] = value;
+          if (seen.has(key)) {
+            // Key was already written: this is a subsequent value of a multi-value field.
+            // Append to the existing comma-separated string instead of overwriting.
+            target[lastKey] = target[lastKey] + "," + value;
+          } else {
+            // First occurrence of this key: write the value directly.
+            target[lastKey] = value;
+            seen.set(key, true);
+          }
         }
     });
 }

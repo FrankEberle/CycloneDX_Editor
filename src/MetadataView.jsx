@@ -25,7 +25,7 @@ import MetadataEditDialog from './MetadataEditDialog';
 import GlobalStateContext from './GlobalStateContext';
 import * as CycloneDX from './cyclonedx';
 
-export default function MetadataView({metadata, show, bom}) {
+export default function MetadataView({metadata, show, bom, onSave}) {
   const [meta, setMeta] = React.useState(metadata);
   const [edit, setEdit] = React.useState(undefined);
   const globalState = React.useContext(GlobalStateContext);
@@ -54,6 +54,7 @@ export default function MetadataView({metadata, show, bom}) {
           bom["metadata"] = edit;
           setMeta({...edit});
           setEdit(undefined);
+          onSave?.();
         }}
         closeAction={() => setEdit(undefined)}
       />

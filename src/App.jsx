@@ -44,6 +44,7 @@ import DrawerMenu from './DrawerMenu';
 import GlobalDataView from './GlobalDataView';
 import ComponentsView from './ComponentsView';
 import MetadataView from './MetadataView';
+import DependencyGraphView from './DependencyGraphView';
 import SaveDialog from './SaveDialog';
 import TemplateDialog from './TemplateDialog';
 import ErrorDialog from './ErrorDialog';
@@ -283,6 +284,14 @@ function Inner({setFontSize}) {
           setHeading("Components");
         },
       },
+      {
+        label: "Dependency Graph",
+        icon: <GridViewIcon/>,
+        action: () => {
+          setView("depgraph");
+          setHeading("Dependency Graph");
+        },
+      },
     ]
   ];
 
@@ -362,9 +371,14 @@ function Inner({setFontSize}) {
           show={view == "metadata"}
           metadata={bom.metadata}
           bom={bom}
+          onSave={() => setBom({...bom})}
         />
         <ComponentsView
           show={view == "components"}
+          bom={bom}
+        />
+        <DependencyGraphView
+          show={view == "depgraph"}
           bom={bom}
         />
       </Box>
