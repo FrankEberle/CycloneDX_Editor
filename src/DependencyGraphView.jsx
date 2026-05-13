@@ -17,6 +17,9 @@
 
 import * as React from 'react';
 import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import FitScreenIcon from '@mui/icons-material/FitScreen';
 import { useTheme } from '@mui/material/styles';
 import cytoscape from 'cytoscape';
 import GlobalStateContext from './GlobalStateContext';
@@ -40,6 +43,8 @@ function bomKey(bom) {
 export default function DependencyGraphView({ show, bom }) {
   const containerRef = React.useRef(null);
   const cyRef = React.useRef(null);
+  const focusStackRef = React.useRef([]);
+  const [canGoBack, setCanGoBack] = React.useState(false);
   const theme = useTheme();
   const globalState = React.useContext(GlobalStateContext);
   const config = globalState.getObj('config');
@@ -72,32 +77,34 @@ export default function DependencyGraphView({ show, bom }) {
       allComponents.push({ component: c, isMeta: false });
     });
 
-    // Build a map: nodeId -> list of target nodeIds (from _dependencies)
-    const edgeMap = new Map(); // source _id -> [target _id, ...]
+    // Build a map: nodeId -> [targetNodeId, ...]
+    const edgeMap = new Map();
     allComponents.forEach(({ component }) => {
       if (!component._dependencies || component._dependencies === '') return;
       const targets = component._dependencies.split(',').filter(Boolean);
-      if (targets.length > 0) {
-        edgeMap.set(component._id, targets);
-      }
+      if (targets.length > 0) edgeMap.set(component._id, targets);
     });
 
-    // Determine which node IDs appear as targets
+    // Build reverse map: targetId -> [sourceId, ...]
+    const reverseMap = new Map();
+    edgeMap.forEach((targets, sourceId) => {
+      targets.forEach((tid) => {
+        if (!reverseMap.has(tid)) reverseMap.set(tid, []);
+        reverseMap.get(tid).push(sourceId);
+      });
+    });
+
+    // Determine root nodes: not a target of any edge
     const targetIds = new Set();
     edgeMap.forEach((targets) => targets.forEach((t) => targetIds.add(t)));
-
-    // Root nodes: nodes that are not a target of any edge
     const rootIds = new Set(
-      allComponents
-        .map(({ component }) => component._id)
-        .filter((id) => !targetIds.has(id))
+      allComponents.map(({ component }) => component._id).filter((id) => !targetIds.has(id))
     );
-    // Fallback: if all nodes are targets (circular deps), treat all as roots
     if (rootIds.size === 0) {
       allComponents.forEach(({ component }) => rootIds.add(component._id));
     }
 
-    // --- Build cytoscape elements (only root nodes initially) ---
+    // --- Build cytoscape elements ---
 
     const nodeElements = allComponents.map(({ component, isMeta }) => ({
       group: 'nodes',
@@ -110,9 +117,7 @@ export default function DependencyGraphView({ show, bom }) {
         shape: isMeta ? 'ellipse' : 'roundrectangle',
         expandable: edgeMap.has(component._id) ? 1 : 0,
       },
-      style: {
-        display: rootIds.has(component._id) ? 'element' : 'none',
-      },
+      style: { display: rootIds.has(component._id) ? 'element' : 'none' },
     }));
 
     const edgeElements = [];
@@ -120,11 +125,7 @@ export default function DependencyGraphView({ show, bom }) {
       targets.forEach((targetId) => {
         edgeElements.push({
           group: 'edges',
-          data: {
-            id: `${sourceId}->${targetId}`,
-            source: sourceId,
-            target: targetId,
-          },
+          data: { id: `${sourceId}->${targetId}`, source: sourceId, target: targetId },
           style: { display: 'none' },
         });
       });
@@ -132,9 +133,7 @@ export default function DependencyGraphView({ show, bom }) {
 
     // --- Initialize cytoscape ---
 
-    if (cyRef.current) {
-      cyRef.current.destroy();
-    }
+    if (cyRef.current) cyRef.current.destroy();
 
     cyRef.current = cytoscape({
       container: containerRef.current,
@@ -190,23 +189,14 @@ export default function DependencyGraphView({ show, bom }) {
       spacingFactor: 1.2,
     }).run();
 
-    // Build reverse map: targetId -> [sourceId, ...] for collapse traversal
-    const reverseMap = new Map();
-    edgeMap.forEach((targets, sourceId) => {
-      targets.forEach((tid) => {
-        if (!reverseMap.has(tid)) reverseMap.set(tid, []);
-        reverseMap.get(tid).push(sourceId);
-      });
-    });
+    // --- Helper functions ---
 
-    // Recursively hide a node and its descendants if they have no other visible incoming edge
+    // Recursively hide descendants that have no other visible incoming edge
     function collapseNode(sourceId) {
       const targets = edgeMap.get(sourceId);
       if (!targets) return;
       targets.forEach((tid) => {
-        // Hide the edge from source to this target
         cy.getElementById(`${sourceId}->${tid}`).style('display', 'none');
-        // Only hide the target node if no other visible incoming edge exists
         const hasOtherVisibleParent = (reverseMap.get(tid) ?? []).some(
           (pid) => pid !== sourceId &&
             cy.getElementById(`${pid}->${tid}`).style('display') !== 'none'
@@ -216,11 +206,45 @@ export default function DependencyGraphView({ show, bom }) {
           collapseNode(tid);
         }
       });
-      // Mark source as expandable again
       cy.getElementById(sourceId).data('expandable', 1);
     }
 
-    // On click: expand hidden children, or collapse visible children
+    // Snapshot current visibility state (set of visible element IDs)
+    function snapshotVisibility() {
+      const visible = new Set();
+      cy.elements().forEach((el) => {
+        if (el.style('display') !== 'none') visible.add(el.id());
+      });
+      return visible;
+    }
+
+    // Restore a visibility snapshot and recalculate expandable flags
+    function restoreVisibility(snapshot) {
+      cy.elements().forEach((el) => {
+        el.style('display', snapshot.has(el.id()) ? 'element' : 'none');
+      });
+      cy.nodes().forEach((node) => {
+        const targets = edgeMap.get(node.id());
+        if (!targets) return;
+        const anyHidden = targets.some(
+          (tid) => cy.getElementById(tid).style('display') === 'none'
+        );
+        node.data('expandable', anyHidden ? 1 : 0);
+      });
+    }
+
+    // Reset stack on graph rebuild and expose pop via ref for the back button
+    const focusStack = focusStackRef.current;
+    focusStack.length = 0;
+    setCanGoBack(false);
+    focusStackRef.popSnapshot = () => {
+      if (focusStack.length === 0) return;
+      restoreVisibility(focusStack.pop());
+      setCanGoBack(focusStack.length > 0);
+    };
+
+    // --- Event handlers ---
+
     cy.on('tap', 'node', (evt) => {
       const sourceId = evt.target.id();
       const targets = edgeMap.get(sourceId);
@@ -231,23 +255,18 @@ export default function DependencyGraphView({ show, bom }) {
       );
 
       if (hiddenTargets.length > 0) {
-        // --- Expand ---
-        // Show hidden target nodes
+        // Expand: show hidden children
         hiddenTargets.forEach((tid) => {
           cy.getElementById(tid).style('display', 'element');
         });
-        // Show edges to now-visible targets
         targets.forEach((tid) => {
           cy.getElementById(`${sourceId}->${tid}`).style('display', 'element');
         });
-        // If all children are now visible, mark node as no longer expandable
         const allVisible = targets.every(
           (tid) => cy.getElementById(tid).style('display') !== 'none'
         );
-        if (allVisible) {
-          evt.target.data('expandable', 0);
-        }
-        // Position newly revealed children in a circle around the parent node
+        if (allVisible) evt.target.data('expandable', 0);
+        // Position new children in a circle around the parent
         const parentPos = evt.target.position();
         const radius = 150 + hiddenTargets.length * 20;
         hiddenTargets.forEach((tid, i) => {
@@ -258,9 +277,31 @@ export default function DependencyGraphView({ show, bom }) {
           });
         });
       } else {
-        // --- Collapse ---
+        // Collapse: hide all children recursively
         collapseNode(sourceId);
       }
+    });
+
+    // Right-click on node: focus on it and its visible descendants
+    cy.on('cxttap', 'node', (evt) => {
+      focusStack.push(snapshotVisibility());
+      setCanGoBack(true);
+
+      const focusId = evt.target.id();
+      const keepVisible = new Set([focusId]);
+      function collectVisible(nodeId) {
+        (edgeMap.get(nodeId) ?? []).forEach((tid) => {
+          if (cy.getElementById(tid).style('display') !== 'none') {
+            keepVisible.add(tid);
+            keepVisible.add(`${nodeId}->${tid}`);
+            collectVisible(tid);
+          }
+        });
+      }
+      collectVisible(focusId);
+      cy.elements().forEach((el) => {
+        el.style('display', keepVisible.has(el.id()) ? 'element' : 'none');
+      });
     });
 
     return () => {
@@ -276,9 +317,26 @@ export default function DependencyGraphView({ show, bom }) {
         flexGrow: 1,
         minHeight: 0,
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
       <Box ref={containerRef} sx={{ width: '100%', height: '100%' }} />
+      {canGoBack && (
+        <IconButton
+          onClick={() => focusStackRef.popSnapshot?.()}
+          sx={{ position: 'absolute', top: 8, left: 8, bgcolor: 'background.paper', boxShadow: 1 }}
+          title="Go back"
+        >
+          <ArrowBackIcon />
+        </IconButton>
+      )}
+      <IconButton
+        onClick={() => cyRef.current?.fit(cyRef.current.nodes(':visible'), 40)}
+        sx={{ position: 'absolute', top: 8, left: canGoBack ? 56 : 8, bgcolor: 'background.paper', boxShadow: 1 }}
+        title="Fit graph"
+      >
+        <FitScreenIcon />
+      </IconButton>
     </Box>
   );
 }
