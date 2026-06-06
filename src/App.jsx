@@ -54,27 +54,33 @@ import * as CycloneDX from './cyclonedx';
 import AboutDialog from './AboutDialog';
 
 
-function loadTextFile() {
+async function loadTextFile() {
+  if (window.showOpenFilePicker) {
+    let handles;
+    try {
+      handles = await window.showOpenFilePicker({
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+        multiple: false,
+      });
+    } catch (e) {
+      if (e.name === 'AbortError') return null;
+      throw e;
+    }
+    const file = await handles[0].getFile();
+    return await file.text();
+  }
   const loadBtn = document.getElementById("__loadFileBtn");
   loadBtn.click();
-  const p = new Promise(function(resolve) {
-    loadBtn.addEventListener("cancel", () => {
-      resolve(null);
-    });
+  return new Promise((resolve) => {
+    loadBtn.addEventListener("cancel", () => resolve(null), { once: true });
     loadBtn.addEventListener("change", () => {
       const files = loadBtn.files;
-      if (files.length == 0) {
-        resolve(null);
-      }
+      if (files.length == 0) return resolve(null);
       const reader = new FileReader();
-      reader.onload = () => {
-        loadBtn.value = "";
-        resolve(reader.result);
-      };
-      reader.readAsText(files[0]);  
-    });
+      reader.onload = () => { loadBtn.value = ""; resolve(reader.result); };
+      reader.readAsText(files[0]);
+    }, { once: true });
   });
-  return p;
 }
 
 
