@@ -97,16 +97,28 @@ async function saveBom(bom, filename) {
     throw new Error("Failed to save BOM: " + error.name + " / " + error.message);
   }
   const json = JSON.stringify(bomFinalized, null, "  ");
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  if (window.showSaveFilePicker) {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: filename || 'sbom.json',
+      types: [
+        { description: 'json', accept: { 'application/json': ['.json'] } },
+      ]
+    });
+    const writable = await handle.createWritable();
+    await writable.write(json);
+    await writable.close();
+  } else {
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 }
 
 
@@ -204,7 +216,7 @@ function Inner({setFontSize}) {
         return;
       }
       const bom = JSON.parse(json_text)
-      await CycloneDX.validateBom
+      await CycloneDX.validateBom(bom);
       if (bom["components"] === undefined) bom["components"] = Array();
       CycloneDX.prepareBom(bom);
       setBom(bom);
@@ -249,7 +261,18 @@ function Inner({setFontSize}) {
       {
         label: "Save",
         icon: <SaveIcon/>,
-        action: () => {setShowSaveDialog(true)},
+        action: async () => {
+          if (window.showSaveFilePicker) {
+            try {
+              await saveBom(bom);
+              globalState.set("modified", false);
+            } catch (error) {
+              if (error.name !== 'AbortError') setErr(error.message);
+            }
+          } else {
+            setShowSaveDialog(true);
+          }
+        },
       },
       ...addBurgerMenuItems,
       {

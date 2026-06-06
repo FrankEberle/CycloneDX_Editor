@@ -10,7 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-dist-extension
+CycloneDX_Editor_Extension
 *.local
 
 # Editor directories and files

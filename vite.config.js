@@ -15,7 +15,7 @@ export default defineConfig({
   },
   ...(isExtension && {
     build: {
-      outDir: 'dist-extension',
+      outDir: 'CycloneDX_Editor_Extension',
       rollupOptions: {
         input: { main: 'index.html' },
       },

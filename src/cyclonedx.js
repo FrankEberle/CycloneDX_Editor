@@ -17,14 +17,13 @@
 
 import spdx_schema from './assets/spdx.schema.json';
 import jsf_0_82_schema from './assets/jsf-0.82.schema.json';
-import cycloneDxSchema12 from './assets/bom-1.2.schema.json?url';
-import cycloneDxSchema13 from './assets/bom-1.3.schema.json?url';
-import cycloneDxSchema14 from './assets/bom-1.4.schema.json?url';
-import cycloneDxSchema15 from './assets/bom-1.5.schema.json?url';
-import cycloneDxSchema16 from './assets/bom-1.6.schema.json?url';
-import Ajv from 'ajv';
-import AjvAddFormats from 'ajv-formats';
-import AvjAddFormatsDraft2019 from 'ajv-formats-draft2019';
+import cycloneDxSchema12 from './assets/bom-1.2.schema.json';
+import cycloneDxSchema13 from './assets/bom-1.3.schema.json';
+import cycloneDxSchema14 from './assets/bom-1.4.schema.json';
+import cycloneDxSchema15 from './assets/bom-1.5.schema.json';
+import cycloneDxSchema16 from './assets/bom-1.6.schema.json';
+import * as JsonSchema from '@hyperjump/json-schema/draft-07';
+import { BASIC } from '@hyperjump/json-schema/experimental';
 
 
 function getComponentTypes(version) {
@@ -564,38 +563,35 @@ function getValue(base, name, defaultValue) {
   return value;
 }
 
+// Register shared sub-schemas once (addSchema is idempotent for known $id)
+JsonSchema.addSchema(spdx_schema);
+JsonSchema.addSchema(jsf_0_82_schema);
+JsonSchema.addSchema(cycloneDxSchema12);
+JsonSchema.addSchema(cycloneDxSchema13);
+JsonSchema.addSchema(cycloneDxSchema14);
+JsonSchema.addSchema(cycloneDxSchema15);
+JsonSchema.addSchema(cycloneDxSchema16);
+
+const versionSchemaId = {
+  "1.2": cycloneDxSchema12.$id,
+  "1.3": cycloneDxSchema13.$id,
+  "1.4": cycloneDxSchema14.$id,
+  "1.5": cycloneDxSchema15.$id,
+  "1.6": cycloneDxSchema16.$id,
+};
+
 async function validateBom(bom) {
-  const versions = {
-    "1.2": cycloneDxSchema12,
-    "1.3": cycloneDxSchema13,
-    "1.4": cycloneDxSchema14,
-    "1.5": cycloneDxSchema15,
-    "1.6": cycloneDxSchema16,
-  };
-  const ajv = new Ajv({strict: false});
-  AjvAddFormats(ajv);
-  AvjAddFormatsDraft2019(ajv);
-  ajv.addSchema(spdx_schema, 'spdx.schema.json');
-  ajv.addSchema(jsf_0_82_schema, 'jsf-0.82.schema.json');
-  // Some SBOM generated from package dependencies contain
-  // URLs like git+https://. This causes a validation error
-  // when the URL is checked. The next three lines force
-  // the check to succeed. Maybe not the best solution, but it works
-  // for the moment.
-  ajv.addFormat("iri-reference", {
-    validate: () => true,
-  })
   if (bom["specVersion"] === undefined) {
     throw new Error("specVersion not defined in BOM.");
   }
-  if (versions[bom["specVersion"]] === undefined) {
+  const schemaId = versionSchemaId[bom["specVersion"]];
+  if (schemaId === undefined) {
     throw new Error("Unsupported CycloneDX version.");
   }
-  const req = await fetch(versions[bom["specVersion"]]);
-  const cyclonedx_schema = await req.json();
-  const validate = ajv.compile(cyclonedx_schema);
-  if (validate(bom) === false) {
-    throw new Error(ajv.errorsText(validate.errors));
+  const result = await JsonSchema.validate(schemaId, bom, BASIC);
+  if (!result.valid) {
+    const errors = (result.errors ?? []).map(e => `${e.instanceLocation}: ${e.absoluteKeywordLocation}`).slice(0, 10);
+    throw new Error(errors.join('\n'));
   }
   return true;
 }
