@@ -18,7 +18,10 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
+import InputBase from '@mui/material/InputBase';
 import FitScreenIcon from '@mui/icons-material/FitScreen';
+import SearchIcon from '@mui/icons-material/Search';
+
 import { useTheme } from '@mui/material/styles';
 import cytoscape from 'cytoscape';
 import dagre from 'cytoscape-dagre';
@@ -50,6 +53,9 @@ function bomKey(bom) {
 export default function DependencyGraphView({ show, bom }) {
   const containerRef = React.useRef(null);
   const cyRef = React.useRef(null);
+  const applyHighlightRef = React.useRef(null);
+  const resetHighlightRef = React.useRef(null);
+  const [searchTerm, setSearchTerm] = React.useState('');
   const theme = useTheme();
   const globalState = React.useContext(GlobalStateContext);
   const config = globalState.getObj('config');
@@ -169,6 +175,57 @@ export default function DependencyGraphView({ show, bom }) {
 
     const cy = cyRef.current;
 
+    function applyHighlight(nodeId) {
+      resetHighlight();
+      if (nodeId === null) return;
+      cy.getElementById(nodeId).style({
+        'background-color': HIGHLIGHT_SELECTED,
+        'border-color': HIGHLIGHT_SELECTED,
+        'border-width': 2,
+        color: '#ffffff',
+      });
+      const visited = new Set([nodeId]);
+      let frontier = [nodeId];
+      let depth = 0;
+      while (frontier.length > 0) {
+        depth++;
+        const color = depth === 1 ? HIGHLIGHT_PARENT : '#f9a19a';
+        const next = [];
+        frontier.forEach((fid) => {
+          (edgeMap.get(fid) ?? []).forEach((tid) => {
+            if (visited.has(tid)) return;
+            visited.add(tid);
+            next.push(tid);
+            cy.getElementById(tid).style({ 'background-color': color, 'border-color': color, 'border-width': 2, color: '#ffffff' });
+            const edge = cy.getElementById(`${fid}->${tid}`);
+            edge.style({ 'line-color': color, 'target-arrow-color': color });
+            edge.data('highlight', 'parent');
+          });
+        });
+        frontier = next;
+      }
+      const visitedP = new Set([nodeId]);
+      let frontierP = [nodeId];
+      let depthP = 0;
+      while (frontierP.length > 0) {
+        depthP++;
+        const color = depthP === 1 ? HIGHLIGHT_CHILD : '#a5d6a7';
+        const next = [];
+        frontierP.forEach((fid) => {
+          (reverseMap.get(fid) ?? []).forEach((pid) => {
+            if (visitedP.has(pid)) return;
+            visitedP.add(pid);
+            next.push(pid);
+            cy.getElementById(pid).style({ 'background-color': color, 'border-color': color, 'border-width': 2, color: '#ffffff' });
+            const edge = cy.getElementById(`${pid}->${fid}`);
+            edge.style({ 'line-color': color, 'target-arrow-color': color });
+            edge.data('highlight', 'child');
+          });
+        });
+        frontierP = next;
+      }
+    }
+
     function resetHighlight() {
       cy.nodes().forEach((n) => {
         const isMeta = n.data('isMeta') === 1;
@@ -185,46 +242,11 @@ export default function DependencyGraphView({ show, bom }) {
       });
     }
 
+    applyHighlightRef.current = applyHighlight;
+    resetHighlightRef.current = resetHighlight;
+
     cy.on('tap', 'node', (evt) => {
-      resetHighlight();
-
-      const node = evt.target;
-      const nodeId = node.id();
-
-      node.style({
-        'background-color': HIGHLIGHT_SELECTED,
-        'border-color': HIGHLIGHT_SELECTED,
-        'border-width': 2,
-        color: '#ffffff',
-      });
-
-      // Abhängigkeiten des Knotens (outgoing) → rot
-      const targets = edgeMap.get(nodeId) ?? [];
-      targets.forEach((tid) => {
-        cy.getElementById(tid).style({
-          'background-color': HIGHLIGHT_PARENT,
-          'border-color': HIGHLIGHT_PARENT,
-          'border-width': 2,
-          color: '#ffffff',
-        });
-        const edge = cy.getElementById(`${nodeId}->${tid}`);
-        edge.style({ 'line-color': HIGHLIGHT_PARENT, 'target-arrow-color': HIGHLIGHT_PARENT });
-        edge.data('highlight', 'parent');
-      });
-
-      // Knoten die von diesem abhängen (incoming) → grün
-      const parents = reverseMap.get(nodeId) ?? [];
-      parents.forEach((pid) => {
-        cy.getElementById(pid).style({
-          'background-color': HIGHLIGHT_CHILD,
-          'border-color': HIGHLIGHT_CHILD,
-          'border-width': 2,
-          color: '#ffffff',
-        });
-        const edge = cy.getElementById(`${pid}->${nodeId}`);
-        edge.style({ 'line-color': HIGHLIGHT_CHILD, 'target-arrow-color': HIGHLIGHT_CHILD });
-        edge.data('highlight', 'child');
-      });
+      applyHighlight(evt.target.id());
     });
 
     // Klick auf hervorgehobene Kante: referenzierten Knoten in die Mitte scrollen
@@ -232,16 +254,12 @@ export default function DependencyGraphView({ show, bom }) {
       const edge = evt.target;
       const hl = edge.data('highlight');
       if (!hl) return;
-      // parent-Kante (rot): Zielknoten (Dependency) zentrieren
-      // child-Kante (grün): Quellknoten (Abhängiger) zentrieren
       const nodeId = hl === 'parent' ? edge.data('target') : edge.data('source');
       const node = cy.getElementById(nodeId);
       const pos = node.renderedPosition();
       const center = { x: cy.width() / 2, y: cy.height() / 2 };
       const pan = cy.pan();
-      cy.animate({
-        pan: { x: pan.x + center.x - pos.x, y: pan.y + center.y - pos.y }
-      }, { duration: 300 });
+      cy.animate({ pan: { x: pan.x + center.x - pos.x, y: pan.y + center.y - pos.y } }, { duration: 300 });
     });
 
     // Click on background resets highlight
@@ -266,13 +284,41 @@ export default function DependencyGraphView({ show, bom }) {
       }}
     >
       <Box ref={containerRef} sx={{ width: '100%', height: '100%' }} />
-      <IconButton
-        onClick={() => cyRef.current?.fit(undefined, 40)}
-        sx={{ position: 'absolute', top: 8, left: 8, bgcolor: 'background.paper', boxShadow: 1 }}
-        title="Fit graph"
-      >
-        <FitScreenIcon />
-      </IconButton>
+      <Box sx={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 0.5 }}>
+        <IconButton
+          onClick={() => cyRef.current?.fit(undefined, 40)}
+          sx={{ bgcolor: 'background.paper', boxShadow: 1 }}
+          title="Fit graph"
+        >
+          <FitScreenIcon />
+        </IconButton>
+        <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const cy = cyRef.current;
+            if (!cy || !searchTerm.trim()) return;
+            const term = searchTerm.trim().toLowerCase();
+            const node = cy.nodes().find((n) => n.data('label').toLowerCase().includes(term));
+            if (!node) return;
+            applyHighlightRef.current?.(node.id());
+            const neighborhood = node.closedNeighborhood();
+            cy.animate({ fit: { eles: neighborhood, padding: 80 } }, { duration: 300 });
+          }}
+          sx={{ display: 'flex', alignItems: 'center', bgcolor: 'background.paper', boxShadow: 1, borderRadius: 1, px: 1 }}
+        >
+          <InputBase
+            placeholder="Search…"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ fontSize: 14 }}
+          />
+          <IconButton type="submit" size="small">
+            <SearchIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      </Box>
+
     </Box>
   );
 }
