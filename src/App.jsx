@@ -55,27 +55,33 @@ import * as CycloneDX from './cyclonedx';
 import AboutDialog from './AboutDialog';
 
 
-function loadTextFile() {
+async function loadTextFile() {
+  if (window.showOpenFilePicker) {
+    let handles;
+    try {
+      handles = await window.showOpenFilePicker({
+        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+        multiple: false,
+      });
+    } catch (e) {
+      if (e.name === 'AbortError') return null;
+      throw e;
+    }
+    const file = await handles[0].getFile();
+    return await file.text();
+  }
   const loadBtn = document.getElementById("__loadFileBtn");
   loadBtn.click();
-  const p = new Promise(function(resolve) {
-    loadBtn.addEventListener("cancel", () => {
-      resolve(null);
-    });
+  return new Promise((resolve) => {
+    loadBtn.addEventListener("cancel", () => resolve(null), { once: true });
     loadBtn.addEventListener("change", () => {
       const files = loadBtn.files;
-      if (files.length == 0) {
-        resolve(null);
-      }
+      if (files.length == 0) return resolve(null);
       const reader = new FileReader();
-      reader.onload = () => {
-        loadBtn.value = "";
-        resolve(reader.result);
-      };
-      reader.readAsText(files[0]);  
-    });
+      reader.onload = () => { loadBtn.value = ""; resolve(reader.result); };
+      reader.readAsText(files[0]);
+    }, { once: true });
   });
-  return p;
 }
 
 
@@ -98,16 +104,28 @@ async function saveBom(bom, filename) {
     throw new Error("Failed to save BOM: " + error.name + " / " + error.message);
   }
   const json = JSON.stringify(bomFinalized, null, "  ");
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  if (window.showSaveFilePicker) {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: filename || 'sbom.json',
+      types: [
+        { description: 'json', accept: { 'application/json': ['.json'] } },
+      ]
+    });
+    const writable = await handle.createWritable();
+    await writable.write(json);
+    await writable.close();
+  } else {
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 }
 
 
@@ -158,6 +176,7 @@ function Inner({setFontSize}) {
   React.useEffect(() => {
     loadConfig().then((c) => {
       globalState.set("config", c);
+      setBom(CycloneDX.emptyBom(c.baseTemplate));
     });
   }, []);
 
@@ -190,7 +209,7 @@ function Inner({setFontSize}) {
 
   async function clearBom() {
     if (await confirmModified()) {
-      setBom(CycloneDX.emptyBom());
+      setBom(CycloneDX.emptyBom(globalState.getObj("config").baseTemplate));
       globalState.set("modified", false);
     }
   }
@@ -205,7 +224,7 @@ function Inner({setFontSize}) {
         return;
       }
       const bom = JSON.parse(json_text)
-      await CycloneDX.validateBom
+      await CycloneDX.validateBom(bom);
       if (bom["components"] === undefined) bom["components"] = Array();
       CycloneDX.prepareBom(bom);
       setBom(bom);
@@ -250,7 +269,18 @@ function Inner({setFontSize}) {
       {
         label: "Save",
         icon: <SaveIcon/>,
-        action: () => {setShowSaveDialog(true)},
+        action: async () => {
+          if (window.showSaveFilePicker) {
+            try {
+              await saveBom(bom);
+              globalState.set("modified", false);
+            } catch (error) {
+              if (error.name !== 'AbortError') setErr(error.message);
+            }
+          } else {
+            setShowSaveDialog(true);
+          }
+        },
       },
       ...addBurgerMenuItems,
       {

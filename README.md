@@ -145,6 +145,22 @@ Example:
 ]
 ```
 
+### baseTemplate (object)
+The property *baseTemplate* defines a partial CycloneDX BOM object that is merged into every new (empty) SBOM created via the *New* menu option. This allows pre-populating fields such as `specVersion`, `metadata`, or `components` for every newly created SBOM.
+
+The value must be a plain JavaScript object. Its properties are shallow-merged into the new BOM using `Object.assign`, so top-level fields in `baseTemplate` override the corresponding defaults.
+
+Example:
+```js
+baseTemplate: {
+  metadata: {
+    supplier: {
+      name: "My Company"
+    }
+  }
+}
+```
+
 ### componentsTableColumns (array of objects)
 Defines additional columns to be shown in the components table. Each object defines one column and must contain the following properties:
 
