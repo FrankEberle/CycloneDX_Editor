@@ -67,6 +67,11 @@ async function loadConfig() {
     console.log("Failed to load configuration: %o", error);
     config = {};
   }
+  if (config["baseTemplate"] !== undefined) {
+    if (typeof(config.baseTemplate) !== "object") {
+      console.log("Config warning, invalid type of property 'baseTemplate'");
+    }
+  }
   if (config["componentProperties"] === undefined) {
     config["componentProperties"] = Array();
   }

@@ -175,6 +175,7 @@ function Inner({setFontSize}) {
   React.useEffect(() => {
     loadConfig().then((c) => {
       globalState.set("config", c);
+      setBom(CycloneDX.emptyBom(c.baseTemplate));
     });
   }, []);
 
@@ -207,7 +208,7 @@ function Inner({setFontSize}) {
 
   async function clearBom() {
     if (await confirmModified()) {
-      setBom(CycloneDX.emptyBom());
+      setBom(CycloneDX.emptyBom(globalState.getObj("config").baseTemplate));
       globalState.set("modified", false);
     }
   }

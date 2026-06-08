@@ -536,7 +536,7 @@ function replaceArrayElem(array, newElem) {
   }
 }
 
-function emptyBom() {
+function emptyBom(baseTemplate) {
   const bom = {
     bomFormat: "CycloneDX",
     specVersion :"1.6",
@@ -546,6 +546,9 @@ function emptyBom() {
       timestamp: createBomTimestamp(),
     },
   };
+  if (baseTemplate !== undefined) {
+    Object.assign(bom, baseTemplate);
+  }
   prepareBom(bom);
   return bom;
 }
