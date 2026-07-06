@@ -296,6 +296,47 @@ export default function ComponentsView({show, bom}) {
     setChangeParentOpen(false);
   }
 
+  const clipboardCopy = React.useCallback(async (comp) => {
+    const appVersion = import.meta.env.PACKAGE_VERSION;
+    const type = "text/plain";
+    const content = JSON.stringify({
+      version: appVersion,
+      component: comp,
+    });
+    const clipboardItemData = {
+      [type]: content,
+    };
+    const clipboardItem = new ClipboardItem(clipboardItemData);
+    await navigator.clipboard.write([clipboardItem]);
+    console.log("Copied to clipboard: %s", content);
+  }, []);
+
+  const clipboardPaste = React.useCallback(async () => {
+    console.log("Paste");
+  }, []);
+
+  const keyCatcherRef = React.useRef(null);
+  const componentRef = React.useRef(component);
+  componentRef.current = component;
+
+  React.useEffect(() => {
+    if (!show) return;
+    const handler = (e) => {
+      // Only intercept Ctrl+C if the focused element is inside the tree/grid container
+      // or the container itself is focused (e.g. when the list is empty)
+      if (e.ctrlKey && e.key === 'c' && keyCatcherRef.current?.contains(document.activeElement)) {
+        clipboardCopy(componentRef.current);
+        e.stopPropagation();
+      } else if (e.ctrlKey && e.key === 'v' && keyCatcherRef.current?.contains(document.activeElement)) {
+        clipboardPaste();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('keydown', handler, true);
+    return () => document.removeEventListener('keydown', handler, true);
+  }, [show, clipboardCopy, clipboardPaste]);
+
+
   if (! show) {
     return <></>;
   }
@@ -337,23 +378,29 @@ export default function ComponentsView({show, bom}) {
         changeParentAction={component === null ? undefined : () => {setChangeParentOpen(true)}}
         viewSwitchAction={switchView}
       />
-      <Conditional show={view == "tree"}>
-        <ComponentsTree
-          bom={bom}
-          component={component}
-          setComponent={setComponent}
-          componentsList={componentsList}
-          setEditComponent={setEditComponent}
-          treeApiRef={treeApiRef}
-      />
-      </Conditional>
-       <Conditional show={view == "table"}>
-        <ComponentsGrid
-          bom={bom}
-          setComponent={setComponent}
-          setEditComponent={setEditComponent}
+      <Box
+        ref={keyCatcherRef}
+        tabIndex={0}
+        sx={{ display: 'flex', flexGrow: 1, minHeight: 0, overflow: 'hidden', outline: 'none' }}
+      >
+        <Conditional show={view == "tree"}>
+          <ComponentsTree
+            bom={bom}
+            component={component}
+            setComponent={setComponent}
+            componentsList={componentsList}
+            setEditComponent={setEditComponent}
+            treeApiRef={treeApiRef}
         />
-       </Conditional>
+        </Conditional>
+        <Conditional show={view == "table"}>
+          <ComponentsGrid
+            bom={bom}
+            setComponent={setComponent}
+            setEditComponent={setEditComponent}
+          />
+        </Conditional>
+      </Box>
     </Box>
   )
 }
