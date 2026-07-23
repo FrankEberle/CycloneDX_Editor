@@ -243,7 +243,7 @@ function preparePedigree(p) {
   return p;
 }
 
-function prepareComponent(c, noID) {
+function prepareComponent(c, noID, includeSub) {
     if (noID !== true) {
       setIdIfUndefined(c);
     }
@@ -259,6 +259,10 @@ function prepareComponent(c, noID) {
     preparePedigree(c.pedigree);
     prepareCompany(c, "manufacturer");
     prepareCompany(c, "supplier");
+    if (includeSub === true) {
+      setIfUndefined(c, "components", Array());
+      c.components.forEach((sc) => {prepareComponent(sc, noID, true)});
+    }
     return c;
 }
 
@@ -488,24 +492,32 @@ function createBomTimestamp() {
   return new Date(Date.now()).toISOString();
 }
 
+// Remove helper-properties (e.g. _id) which are not part of CycloneDX
+function cleanupComponent(comp) {
+  Object.getOwnPropertyNames(comp).forEach((p) => {
+    if (p.startsWith("_")) {
+      delete comp[p];
+    } else if (comp[p] !== null && typeof comp[p] === "object") {
+      if (Array.isArray(comp[p])) {
+        comp[p].forEach((item) => { if (item !== null && typeof item === "object") cleanupComponent(item); });
+      } else {
+        cleanupComponent(comp[p]);
+      }
+    }
+  });
+  return comp;
+}
+
 function finalizeBom(bom) {
   // _flattenedComponents is possibly outdated
   bom._flattenedComponents = flattenComponents(bom.components);
   finalizeDependencies(bom);
-  // remove properties with name starting with underscore (e.g. _color, _computed) from components
   bom._flattenedComponents.forEach((c) => {
-    Object.getOwnPropertyNames(c).forEach((p) => {
-      if (p.startsWith("_")) {
-        delete c[p];
-      }
-    });
-    delete c._color;
+    cleanupComponent(c);
   });
   // remove _id from metadata.component
   if (bom.metadata?.component) {
-    Object.getOwnPropertyNames(bom.metadata.component).forEach((p) => {
-      if (p.startsWith("_")) delete bom.metadata.component[p];
-    });
+    cleanupComponent(bom.metadata.component);
   }
   delete bom._flattenedComponents;
   removeEmptyFields(bom);
@@ -704,6 +716,18 @@ function treeViewGetItemChildren(component) {
   return new Array();
 }
 
+// Returns the parent of the given component within the BOM tree.
+// Uses foreachComponent which passes the direct container (base) of each visited component.
+// If the component is found, base is returned as the parent.
+// If the component is a direct child of bom.components (top-level), foreachComponent returns
+// undefined and the fallback ?? bom ensures bom itself is returned as the parent.
+function getParent(bom, component) {
+  return foreachComponent(bom, (c, base) => {
+    if (c._id === component._id) return [false, base];
+    return [true, undefined];
+  }) ?? bom;
+}
+
 export {
   getComponentTypes,
   componentLookup,
@@ -738,4 +762,6 @@ export {
   treeViewGetItemId,
   treeViewGetItemLabel,
   treeViewGetItemChildren,
+  cleanupComponent,
+  getParent
 };

@@ -17,14 +17,6 @@
 
 import * as React from 'react';
 import Box from '@mui/material/Box';
-import AutoHideSpeedDial from './AutoHideSpeedDial';
-import SpeedDialAction from '@mui/material/SpeedDialAction';
-import DeleteIcon from '@mui/icons-material/Delete';
-import AddBoxIcon from '@mui/icons-material/AddBox';
-import EditIcon from '@mui/icons-material/Edit';
-import SpeedDialIcon from '@mui/material/SpeedDialIcon';
-import GridViewIcon from '@mui/icons-material/GridView';
-import AutoAwesomeMotionIcon from '@mui/icons-material/AutoAwesomeMotion';
 import { useTreeViewApiRef} from '@mui/x-tree-view/hooks';
 import { useTheme } from '@mui/material/styles';
 
@@ -35,92 +27,11 @@ import YesNoDialog from './YesNoDialog';
 import GlobalStateContext from './GlobalStateContext';
 import ComponentsGrid from './ComponentsGrid';
 import ComponentsTree from './ComponentsTree';
+import ComponentSpeedDial from './ComponentSpeedDial';
+import ComponentPasteDialog from './ComponentPasteDialog';
 import { Conditional } from './helper';
 import * as CycloneDX from './cyclonedx';
 
-
-function ComponentSpeedDial({addAction, editAction, deleteAction, viewSwitchAction, changeParentAction}) {
-  const [isOpen, setIsOpen] = React.useState(false);
-  return (
-    <AutoHideSpeedDial
-      ariaLabel='Component Actions'
-      sx={{ position: 'absolute', bottom: 20, left: 20 }}
-      icon={<SpeedDialIcon />}
-      open={isOpen}
-      onClick={() => {setIsOpen(!isOpen)}}
-    >
-      <SpeedDialAction
-        key={'add'}
-        icon=<AddBoxIcon/>
-        slotProps={{
-          tooltip: {
-            title: 'Add Component',
-          },
-        }}
-        onClick={() => {
-          setIsOpen(false);
-          addAction();
-        }}
-      />
-      <SpeedDialAction
-      sx={{display: editAction === undefined ? 'none' : 'block'}}
-        key={'edit'}
-        icon=<EditIcon/>
-        slotProps={{
-          tooltip: {
-            title: 'Edit Component',
-          },
-        }}
-        onClick={() => {
-          setIsOpen(false);
-          editAction();
-        }}
-      />
-      <SpeedDialAction
-          sx={{display: deleteAction === undefined ? 'none' : 'block'}}
-          key={'delete'}
-          icon=<DeleteIcon/>
-          slotProps={{
-            tooltip: {
-              title: 'Delete Component',
-            },
-          }}
-          onClick={() => {
-            setIsOpen(false);
-            deleteAction();
-          }}
-        />
-      <SpeedDialAction
-          sx={{display: changeParentAction === undefined ? 'none' : 'block'}}
-          key={'changeParent'}
-          icon=<AutoAwesomeMotionIcon/>
-          slotProps={{
-            tooltip: {
-              title: 'Change Parent',
-            },
-          }}
-          onClick={() => {
-            setIsOpen(false);
-            changeParentAction();
-          }}
-      />
-      <SpeedDialAction
-          key={'switchView'}
-          icon=<GridViewIcon/>
-          slotProps={{
-            tooltip: {
-              title: 'Switch View',
-            },
-          }}
-          onClick={() => {
-            setIsOpen(false);
-            viewSwitchAction();
-          }}
-        />
-
-    </AutoHideSpeedDial>
-  );
-}
 
 export default function ComponentsView({show, bom}) {
   const globalState = React.useContext(GlobalStateContext);
@@ -130,6 +41,7 @@ export default function ComponentsView({show, bom}) {
   const [editComponent, setEditComponent] = React.useState(undefined);
   const [newCmpOpen, setNewCmpOpen] = React.useState(false);
   const [confirmDelOpen, setConfirmDelOpen] = React.useState(false);
+  const [pasteObj, setPasteObj] = React.useState(null);
   const [changeParentOpen, setChangeParentOpen] = React.useState(false);
   const [view, setView] = React.useState("table");
   const primaryTextColor = useTheme().palette.text.primary;
@@ -162,11 +74,34 @@ export default function ComponentsView({show, bom}) {
     }
   }
 
-  function updateBom(refreshTree) {
+  function updateBom(refreshTree, updateColor) {
     CycloneDX.updateBom(bom);
+    if (updateColor === true) {
+      bom._flattenedComponents.forEach((c) => {c._color = getColor(c)});
+      refreshTree = true;
+    }
     if (refreshTree) {
       setComponentsList([...bom.components]);
     }
+  }
+
+  function insertComponent(target, component) {
+    if (target["components"] === undefined) {
+      target["components"] = new Array();
+    }
+    CycloneDX.prepareComponent(component, false, true);
+    component._color = getColor(component);
+    target.components.push(component);
+    updateBom(true, true);
+    setComponent(component);
+    if (treeApiRef.current !== undefined) {
+      treeApiRef.current.setItemSelection({
+        itemId: component._id,
+        shouldBeSelected: true,
+      })
+    }
+    globalState.set("modified", true);
+    return component;
   }
 
   function newCmpDialogSave(formData) {
@@ -183,25 +118,17 @@ export default function ComponentsView({show, bom}) {
     } else {
       target = bom;
     }
-    if (target["components"] === undefined) {
-      target["components"] = new Array();
-    }
-    let newCmp = CycloneDX.prepareComponent({
+    const newCmp = insertComponent(target, {
       name: formData.get("name"),
       type: formData.get("type"),
     });
-    newCmp._color = getColor(newCmp);
-    target.components.push(newCmp);
     setNewCmpOpen(false);
-    updateBom(true);
-    setComponent(newCmp);
     if (treeApiRef.current !== undefined) {
       treeApiRef.current.setItemSelection({
         itemId: newCmp._id,
         shouldBeSelected: true,
       })
     }
-    globalState.set("modified", true);
   }
 
   function delComponent() {
@@ -296,45 +223,106 @@ export default function ComponentsView({show, bom}) {
     setChangeParentOpen(false);
   }
 
-  const clipboardCopy = React.useCallback(async (comp) => {
-    const appVersion = import.meta.env.PACKAGE_VERSION;
-    const type = "text/plain";
+  async function clipboardCopy(comp) {
     const content = JSON.stringify({
-      version: appVersion,
-      component: comp,
+        version: import.meta.env.PACKAGE_VERSION,
+        component: CycloneDX.cleanupComponent(CycloneDX.deepCopy(comp)),
     });
-    const clipboardItemData = {
-      [type]: content,
-    };
-    const clipboardItem = new ClipboardItem(clipboardItemData);
+    const clipboardItem = new ClipboardItem({ "text/plain": content });
     await navigator.clipboard.write([clipboardItem]);
     console.log("Copied to clipboard: %s", content);
-  }, []);
+  }
 
-  const clipboardPaste = React.useCallback(async () => {
-    console.log("Paste");
-  }, []);
+  const clipboardPasteStart = React.useCallback(async (e) => {
+    const text = e.clipboardData?.getData('text/plain');
+    if (!text) return;
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+      if ((typeof parsed !== 'object') || (parsed === null))
+          throw new Error("Paste; object expected");
+      if ((parsed.version === undefined) || (parsed.version !== import.meta.env.PACKAGE_VERSION))
+          throw new Error("Paste; unexpected or missing version");
+      if ((parsed.component === undefined) || (typeof parsed.component !== 'object') || (parsed.component === null))
+          throw new Error("Paste; missing component or invalid type");
+      const fakeBom = {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
+        "components": [parsed.component],
+      }
+      await CycloneDX.validateBom(fakeBom);
+    } catch (err) {
+      console.log("Paste; failed to parse JSON: %o", err);
+      return;
+    }
+    console.log("Paste: %o", parsed);
+    setPasteObj(parsed.component);
+  });
+
+  function clipboardPasteFinalize(target, elements) {
+    console.log(elements);
+    if (target == "top") {
+      if (component === null) {
+        insertComponent(bom, pasteObj);
+      } else {
+        insertComponent(CycloneDX.getParent(bom, component), pasteObj);
+      }
+    } else if (target == "child") {
+      insertComponent(component, pasteObj);
+    } else if (target == "into") {
+      const simple = ["manufacturer", "supplier", "licenses", "externalReferences", "pedigree",
+        "properties",
+      ];
+      for (let p of simple) {
+        if (elements[p] && pasteObj[p] !== undefined) {
+          component[p] = CycloneDX.deepCopy(pasteObj[p]);
+        }
+      }
+      if (elements["components"] && pasteObj.components !== undefined) {
+        component.components = CycloneDX.deepCopy(pasteObj.components);
+        CycloneDX.prepareComponent(component, false, true);
+        updateBom(true, true);
+      }
+    } else {
+      throw new Error(`Unexpected target: ${target}`);
+    }
+  }
 
   const keyCatcherRef = React.useRef(null);
-  const componentRef = React.useRef(component);
-  componentRef.current = component;
 
   React.useEffect(() => {
     if (!show) return;
-    const handler = (e) => {
-      // Only intercept Ctrl+C if the focused element is inside the tree/grid container
-      // or the container itself is focused (e.g. when the list is empty)
-      if (e.ctrlKey && e.key === 'c' && keyCatcherRef.current?.contains(document.activeElement)) {
-        clipboardCopy(componentRef.current);
-        e.stopPropagation();
-      } else if (e.ctrlKey && e.key === 'v' && keyCatcherRef.current?.contains(document.activeElement)) {
-        clipboardPaste();
+    const keyHandler = (e) => {
+      if (keyCatcherRef.current?.contains(document.activeElement)) {
+        if (e.ctrlKey && e.key === 'c') {
+          clipboardCopy(component);
+          e.stopPropagation();
+        } else if (e.key === 'Delete') {
+          if (component !== null) {
+            setConfirmDelOpen(true);
+          }
+          e.stopPropagation();
+        } else if (e.key === 'Insert') {
+          setNewCmpOpen(true);
+          e.stopPropagation();
+        } else {
+          console.log(e.key);
+        }
+      }
+    };
+    const pasteHandler = (e) => {
+      if (keyCatcherRef.current?.contains(document.activeElement)) {
+        clipboardPasteStart(e);
         e.stopPropagation();
       }
     };
-    document.addEventListener('keydown', handler, true);
-    return () => document.removeEventListener('keydown', handler, true);
-  }, [show, clipboardCopy, clipboardPaste]);
+    document.addEventListener('keydown', keyHandler, true);
+    document.addEventListener('paste', pasteHandler, true);
+    return () => {
+      document.removeEventListener('keydown', keyHandler, true);
+      document.removeEventListener('paste', pasteHandler, true);
+    };
+  }, [show, bom, component]);
 
 
   if (! show) {
@@ -368,6 +356,17 @@ export default function ComponentsView({show, bom}) {
         bom={bom}
         saveAction={storeComponent}
         closeAction={() => setEditComponent(undefined)}
+      />
+      <ComponentPasteDialog
+        open={pasteObj !== null}
+        selected={component !== null}
+        okAction={(params) => {
+          if (pasteObj !== null) {
+            clipboardPasteFinalize(params.target, params.elements);
+            setPasteObj(null);
+          }
+        }}
+        closeAction={() => {setPasteObj(null)}}
       />
       <ComponentSpeedDial
         addAction={() => {setNewCmpOpen(true)}}

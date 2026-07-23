@@ -81,6 +81,10 @@ function LicenseEditDialog({license, saveAction, closeAction}) {
     if (data.license.id == "-") {
       delete data.license.id;
     }
+    // If no name is given, remove the field entirely
+    if (data.license.name == "") {
+      delete data.license.name;
+    }
     saveAction(data);
     closeAction();
   }
