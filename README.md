@@ -302,6 +302,71 @@ componentProperties: [
 
 
 
+## Help Texts
+
+Help texts can be configured via the `help` property in `config.js`. Each section header in the editor can display a help icon (?). Clicking it opens a popover with the configured text. Help texts are written in Markdown.
+
+To force a line break within a paragraph, end the line with two spaces followed by `\n`:
+
+```js
+"First line  \nSecond line"
+```
+
+### Edit Metadata Dialog (`help.metadata`)
+
+Controls help texts for the sections in the *Edit Metadata* dialog:
+
+| Property | Section |
+|---|---|
+| `help.metadata.component` | Component |
+| `help.metadata.miscellaneous` | Miscellaneous |
+| `help.metadata.manufacturer` | Manufacturer |
+| `help.metadata.authors` | Authors |
+| `help.metadata.supplier` | Supplier |
+| `help.metadata.properties` | Properties |
+
+### Edit Component Dialog (`help.component`)
+
+Controls help texts for the sections in the *Edit Component* dialog:
+
+| Property | Section |
+|---|---|
+| `help.component.identification` | Identification |
+| `help.component.manufacturer` | Manufacturer |
+| `help.component.supplier` | Supplier |
+| `help.component.licenses` | Licenses |
+| `help.component.externalReferences` | External References |
+| `help.component.hashes` | Hashes |
+| `help.component.pedigree` | Pedigree |
+| `help.component.properties` | Properties |
+| `help.component.dependencies` | Dependencies |
+| `help.component.customData` | Custom Data |
+
+### Edit Global Data Dialog (`help.global`)
+
+Controls help texts for the sections in the *Edit Global Data* dialog:
+
+| Property | Section |
+|---|---|
+| `help.global.miscellaneous` | Miscellaneous |
+
+### Example
+
+```js
+export default {
+  help: {
+    metadata: {
+      component: "## Component\nDescribe the top-level product.",
+      licenses: "Add all licenses that apply."
+    },
+    component: {
+      identification: "## Identification\nProvide name, version and type of the component.",
+      licenses: "Add **all licenses** under which this component is distributed."
+    }
+  }
+}
+```
+
 ## Deployment
 
 ### Docker Container

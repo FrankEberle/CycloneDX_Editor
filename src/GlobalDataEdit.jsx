@@ -15,31 +15,42 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import React from 'react';
 import FormControl from '@mui/material/FormControl';
 import Stack from '@mui/material/Stack';
 import CeTextField from './CeTextField';
+import CompAccordion from './CompAccordion';
+import GlobalStateContext from './GlobalStateContext';
 import * as CycloneDX from './cyclonedx';
 
 export default function GlobalDataEdit({bom, readOnly}) {
+  const globalState = React.useContext(GlobalStateContext);
+  const config = globalState.getObj("config");
   return (
     <FormControl
       size='small'
       fullWidth
     >
-      <Stack spacing={2}>
-        <CeTextField
-          name="serialNumber"
-          label="Serial Number"
-          readOnly={readOnly}
-          defaultValue={CycloneDX.getValue(bom, "serialNumber")}
-        />
-        <CeTextField
-          name="version"
-          label="Version"
-          readOnly={readOnly}
-          defaultValue={CycloneDX.getValue(bom, "version")}
-        />
-      </Stack>
+      <CompAccordion
+        title={"Miscellaneous"}
+        defaultExpanded={true}
+        helpText={readOnly !== true && config.help?.global?.miscellaneous}
+      >
+        <Stack spacing={2}>
+          <CeTextField
+            name="serialNumber"
+            label="Serial Number"
+            readOnly={readOnly}
+            defaultValue={CycloneDX.getValue(bom, "serialNumber")}
+          />
+          <CeTextField
+            name="version"
+            label="Version"
+            readOnly={readOnly}
+            defaultValue={CycloneDX.getValue(bom, "version")}
+          />
+        </Stack>
+      </CompAccordion>
     </FormControl>
   );
 }

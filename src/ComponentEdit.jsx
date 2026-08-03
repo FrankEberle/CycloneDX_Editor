@@ -54,6 +54,7 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
             defaultExpanded={true}
             id="identification-accordion"
             title="Identification"
+            helpText={readOnly === false && config.help?.component?.identification}
             ref={identAccRef}
         >
             <FormControl
@@ -115,6 +116,7 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
         <CompAccordion
             id="mandufacturer-accordion"
             title="Manufacturer"
+            helpText={readOnly === false && config.help?.component?.manufacturer}
         >
             <Manufacturer
                 readOnly={readOnly}
@@ -125,6 +127,7 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
         <CompAccordion
             id="supplier-accordion"
             title="Supplier"
+            helpText={readOnly === false && config.help?.component?.supplier}
         >
             <Manufacturer
                 readOnly={readOnly}
@@ -135,24 +138,28 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
         <CompAccordion
             id="licenses-accordion"
             title="Licenses"
+            helpText={readOnly === false && config.help?.component?.licenses}
         >
             <Licenses licenses={component.licenses} noTitle={true} readOnly={readOnly}/>
         </CompAccordion>
         <CompAccordion
             id="external-references-accordion"
             title="External References"
+            helpText={readOnly === false && config.help?.component?.externalReferences}
         >
             <ExternalReferences references={component.externalReferences} noTitle={true} readOnly={readOnly}/>
         </CompAccordion>
         <CompAccordion
             id="hashes-accordion"
             title="Hashes"
+            helpText={readOnly === false && config.help?.component?.hashes}
         >
             <Hashes hashes={component.hashes} noTitle={true} readOnly={readOnly}/>
         </CompAccordion>
         <CompAccordion
             id="pedigree-accordion"
             title="Pedigree"
+            helpText={readOnly === false && config.help?.component?.pedigree}
         >
             <Stack spacing={2}>
                 <CeTextField
@@ -169,6 +176,7 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
         <CompAccordion
             id="properties-accordion"
             title="Properties"
+            helpText={readOnly === false && config.help?.component?.properties}
         >
             <Properties
                 form_id="component"
@@ -180,6 +188,7 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
         <CompAccordion
             id="dependencies-accordion"
             title="Dependencies"
+            helpText={readOnly === false && config.help?.component?.dependencies}
         >
             <MultiSelect
                 name="_dependencies"
@@ -194,6 +203,7 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
               id="custom-accordion"
               title="Custom Data"
               ref={customAccRef}
+              helpText={readOnly === false && config.help?.component?.customData}
           >
                 <CustomData
                     obj={component}

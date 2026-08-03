@@ -45,6 +45,7 @@ export default function MetadataEdit({metadata, readOnly, register, bom}) {
         title={"Component"}
         defaultExpanded={true}
         ref={compAccRef}
+        helpText={readOnly !== true && config.help?.metadata?.component}
       >
         <FormControl
           fullWidth
@@ -98,6 +99,7 @@ export default function MetadataEdit({metadata, readOnly, register, bom}) {
       <CompAccordion
         title={"Miscellaneous"}
         ref={miscAccRef}
+        helpText={readOnly !== true && config.help?.metadata?.miscellaneous}
       >
         <FormControl
           fullWidth
@@ -119,6 +121,7 @@ export default function MetadataEdit({metadata, readOnly, register, bom}) {
 
       <CompAccordion
         title={"Manufacturer"}
+        helpText={readOnly !== true && config.help?.metadata?.manufacturer}
       >
         <Manufacturer
           component={metadata}
@@ -128,6 +131,7 @@ export default function MetadataEdit({metadata, readOnly, register, bom}) {
       </CompAccordion>
       <CompAccordion
         title={"Authors"}
+        helpText={readOnly !== true && config.help?.metadata?.authors}
       >
         <Persons
           persons={metadata.authors}
@@ -138,6 +142,7 @@ export default function MetadataEdit({metadata, readOnly, register, bom}) {
       </CompAccordion>
       <CompAccordion
         title={"Supplier"}
+        helpText={readOnly !== true && config.help?.metadata?.supplier}
       >
         <Manufacturer
           component={metadata}
@@ -147,6 +152,7 @@ export default function MetadataEdit({metadata, readOnly, register, bom}) {
       </CompAccordion>
       <CompAccordion
         title={"Properties"}
+        helpText={readOnly !== true && config.help?.metadata?.properties}
       >
         <Properties
           properties={metadata.properties}

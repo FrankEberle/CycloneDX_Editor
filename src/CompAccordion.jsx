@@ -21,9 +21,10 @@ import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import HelpButton from './HelpButton';
 
 
-export default function CompAccordion({title, id, defaultExpanded, children, ref}) {
+export default function CompAccordion({title, id, defaultExpanded, helpText, children, ref}) {
   const [expanded, setExpanded] = React.useState(defaultExpanded === true ? true : false);
 
   React.useImperativeHandle(ref, () => {
@@ -50,7 +51,10 @@ export default function CompAccordion({title, id, defaultExpanded, children, ref
         aria-controls={id+"-content"}
         id={id}
       >
-        <Typography component="span">{title}</Typography>
+        <Typography component="span" sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+          {title}
+          {helpText && <HelpButton helpText={helpText} />}
+        </Typography>
       </AccordionSummary>
       <AccordionDetails>
         {children}
