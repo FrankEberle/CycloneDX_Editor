@@ -29,6 +29,7 @@ import ComponentsGrid from './ComponentsGrid';
 import ComponentsTree from './ComponentsTree';
 import ComponentSpeedDial from './ComponentSpeedDial';
 import ComponentPasteDialog from './ComponentPasteDialog';
+import ErrorDialog from './ErrorDialog';
 import { Conditional } from './helper';
 import * as CycloneDX from './cyclonedx';
 
@@ -44,6 +45,7 @@ export default function ComponentsView({show, bom}) {
   const [pasteObj, setPasteObj] = React.useState(null);
   const [changeParentOpen, setChangeParentOpen] = React.useState(false);
   const [view, setView] = React.useState("table");
+  const [err, setErr] = React.useState(undefined);
   const primaryTextColor = useTheme().palette.text.primary;
 
   const treeApiRef = useTreeViewApiRef();
@@ -129,6 +131,25 @@ export default function ComponentsView({show, bom}) {
         shouldBeSelected: true,
       })
     }
+  }
+
+  function confirmDelete() {
+    // Check if component is referenced
+    let referencedBy = Array();
+    for (let comp of bom._flattenedComponents) {
+      if (comp._dependencies === undefined) continue;
+      for (let ref of comp._dependencies.split(",")) {
+        if (component._id == ref) {
+          referencedBy.push(comp.name);
+        }
+      }
+    }
+    if (referencedBy.length != 0) {
+      setErr("Cannot delete component because it is referenced by: " + referencedBy.join(", "));
+      return;
+    }
+    // Deletion ok ...
+    setConfirmDelOpen(true);
   }
 
   function delComponent() {
@@ -299,7 +320,7 @@ export default function ComponentsView({show, bom}) {
           e.stopPropagation();
         } else if (e.key === 'Delete') {
           if (component !== null) {
-            setConfirmDelOpen(true);
+            confirmDelete();
           }
           e.stopPropagation();
         } else if (e.key === 'Insert') {
@@ -331,6 +352,10 @@ export default function ComponentsView({show, bom}) {
 
   return (
     <Box sx={{display: show ? 'flex' : 'none', flexDirection: 'row', flexGrow: 1, minHeight: 0, overflow: 'auto', visibility: 'visible'}}>
+      <ErrorDialog
+        err={err}
+        closeAction={() => {setErr(undefined)}}
+      />
       <NewComponentDialog
         open={newCmpOpen}
         askSub={component != null}
@@ -373,7 +398,7 @@ export default function ComponentsView({show, bom}) {
         editAction={component === null ? undefined : () => {
           setEditComponent(CycloneDX.deepCopy(component));
         }}
-        deleteAction={component === null ? undefined : () => {setConfirmDelOpen(true)}}
+        deleteAction={component === null ? undefined : () => {confirmDelete()}}
         changeParentAction={component === null ? undefined : () => {setChangeParentOpen(true)}}
         viewSwitchAction={switchView}
       />
