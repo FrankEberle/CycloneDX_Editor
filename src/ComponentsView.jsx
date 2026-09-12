@@ -251,7 +251,6 @@ export default function ComponentsView({show, bom}) {
     });
     const clipboardItem = new ClipboardItem({ "text/plain": content });
     await navigator.clipboard.write([clipboardItem]);
-    console.log("Copied to clipboard: %s", content);
   }
 
   const clipboardPasteStart = React.useCallback(async (e) => {
@@ -276,12 +275,10 @@ export default function ComponentsView({show, bom}) {
       console.log("Paste; failed to parse JSON: %o", err);
       return;
     }
-    console.log("Paste: %o", parsed);
     setPasteObj(parsed.component);
   });
 
   function clipboardPasteFinalize(target, elements) {
-    console.log(elements);
     if (target == "top") {
       if (component === null) {
         insertComponent(bom, pasteObj);
@@ -294,15 +291,27 @@ export default function ComponentsView({show, bom}) {
       const simple = ["manufacturer", "supplier", "licenses", "externalReferences", "pedigree",
         "properties",
       ];
-      for (let p of simple) {
-        if (elements[p] && pasteObj[p] !== undefined) {
-          component[p] = CycloneDX.deepCopy(pasteObj[p]);
+      for (const e in elements) {
+        if (elements[e] !== true) continue;
+        if (simple.includes(e)) {
+          if (pasteObj[e] == undefined) continue;
+          component[e] = CycloneDX.deepCopy(pasteObj[e]);
+          CycloneDX.prepareComponent(component, false, false);
+        } else if (e == "identifier") {
+          const identifiers = ["cpe", "purl"];
+          for (const i of identifiers) {
+            if (pasteObj[i] !== undefined) {
+              component[i] = pasteObj[i];
+            }
+          }
+        } else if (e == "components") {
+          if (pasteObj[e] == undefined) continue;
+          component.components = CycloneDX.deepCopy(pasteObj.components);
+          CycloneDX.prepareComponent(component, false, true);
+          updateBom(true, true);
+        } else {
+          throw new Error(`Element ${e} is not handled`);
         }
-      }
-      if (elements["components"] && pasteObj.components !== undefined) {
-        component.components = CycloneDX.deepCopy(pasteObj.components);
-        CycloneDX.prepareComponent(component, false, true);
-        updateBom(true, true);
       }
     } else {
       throw new Error(`Unexpected target: ${target}`);
@@ -327,7 +336,7 @@ export default function ComponentsView({show, bom}) {
           setNewCmpOpen(true);
           e.stopPropagation();
         } else {
-          console.log(e.key);
+          // console.log(e.key);
         }
       }
     };
