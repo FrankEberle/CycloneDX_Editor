@@ -105,9 +105,8 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
                     />
                     <CeTextField
                         label='bom-ref'
-                        disabled={true}
                         name='bom-ref'
-                        readOnly={true}
+                        readOnly={readOnly}
                         defaultValue={CycloneDX.getValue(component, "bom-ref", "")}
                     />
                 </Stack>

@@ -270,6 +270,15 @@ function Inner({setFontSize}) {
         label: "Save",
         icon: <SaveIcon/>,
         action: async () => {
+          let bomRefDups = CycloneDX.findBomRefDuplicates(bom);
+          if (bomRefDups.length > 0) {
+            let err = "One or more components have non-unique bom-refs:\n"
+            bomRefDups.forEach((d) => {
+              err += "\n" + d.components.map((c) => {return c.name}).join(", ") + " (bom-ref: " + d.bomRef + ")";
+            });
+            setErr(err);
+            return;
+          }
           if (window.showSaveFilePicker) {
             try {
               await saveBom(bom);

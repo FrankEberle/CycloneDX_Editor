@@ -728,6 +728,29 @@ function getParent(bom, component) {
   }) ?? bom;
 }
 
+function findBomRefDuplicates(bom) {
+  const seen = {};
+  const result = [];
+  bom._flattenedComponents.forEach((c) => {
+    let bomRef = c["bom-ref"];
+    if (seen[bomRef] === undefined) {
+      seen[bomRef] = new Array();
+    }
+    seen[bomRef].push(c);
+  });
+  Object.keys(seen).forEach((bomRef) => {
+    if (seen[bomRef].length > 1) {
+      result.push(
+        {
+          bomRef: bomRef,
+          components: seen[bomRef]
+        }
+      );
+    }
+  });
+  return result;
+}
+
 export {
   getComponentTypes,
   componentLookup,
@@ -763,5 +786,6 @@ export {
   treeViewGetItemLabel,
   treeViewGetItemChildren,
   cleanupComponent,
-  getParent
+  getParent,
+  findBomRefDuplicates
 };

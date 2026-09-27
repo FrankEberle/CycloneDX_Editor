@@ -23,6 +23,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
 
 export default function ErrorDialog({err, closeAction}) {
+  const html = err?.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
   return (
     <Dialog
       open={err !== undefined}
@@ -32,9 +33,7 @@ export default function ErrorDialog({err, closeAction}) {
           Error
       </DialogTitle>
       <DialogContent sx={{minWidth: '500px'}}>
-        <Typography>
-          {err}
-        </Typography>
+        <Typography><span dangerouslySetInnerHTML={{__html: html}} /></Typography>
       </DialogContent>
       <DialogActions>
         <Button
