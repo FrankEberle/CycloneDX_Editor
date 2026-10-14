@@ -739,7 +739,7 @@ function findBomRefDuplicates(bom) {
     seen[bomRef].push(c);
   });
   Object.keys(seen).forEach((bomRef) => {
-    if (seen[bomRef].length > 1) {
+    if ((bomRef != "") && (seen[bomRef].length > 1)) {
       result.push(
         {
           bomRef: bomRef,
