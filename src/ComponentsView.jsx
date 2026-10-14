@@ -312,6 +312,7 @@ export default function ComponentsView({show, bom}) {
         } else {
           throw new Error(`Element ${e} is not handled`);
         }
+        globalState.set("modified", true);
       }
     } else {
       throw new Error(`Unexpected target: ${target}`);
