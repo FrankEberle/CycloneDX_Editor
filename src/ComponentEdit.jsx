@@ -32,6 +32,7 @@ import CeDropdownField from './CeDropdownField';
 import GlobalStateContext from './GlobalStateContext';
 import CustomData from './CustomData';
 import MultiSelect from './MultiSelect';
+import Vulnerabilities from './Vulnerabilities';
 
 export default function ComponentEdit({component, bom, readOnly, register}) {
     const globalState = React.useContext(GlobalStateContext);
@@ -171,7 +172,13 @@ export default function ComponentEdit({component, bom, readOnly, register}) {
             </Stack>
             <PedigreePatches patches={component.pedigree.patches} readOnly={readOnly} />
         </CompAccordion>
-
+        <CompAccordion
+            id="vulnerabilities-accordion"
+            title="Vulnerabilities"
+            helpText={readOnly === false && config.help?.component?.vulnerabilities}
+        >
+            <Vulnerabilities vulnerabilities={component._vulnerabilities} readOnly={readOnly} />
+        </CompAccordion>
         <CompAccordion
             id="properties-accordion"
             title="Properties"

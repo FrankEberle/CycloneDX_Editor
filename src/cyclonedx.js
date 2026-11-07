@@ -141,6 +141,35 @@ function getSpdxIDs() {
   return spdx_schema.enum;
 }
 
+function getVulnAnalysisStates(version) {
+  if (version === undefined || version == "1.6") {
+    return [
+      "resolved",
+      "resolved_with_pedigree",
+      "exploitable",
+      "in_triage",
+      "false_positive",
+      "not_affected",
+    ];
+  }
+}
+
+function getVulnAnalysisJustifications(version) {
+  if (version === undefined || version == "1.6") {
+    return [
+      "code_not_present",
+      "code_not_reachable",
+      "requires_configuration",
+      "requires_dependency",
+      "requires_environment",
+      "protected_by_compiler",
+      "protected_at_runtime",
+      "protected_at_perimeter",
+      "protected_by_mitigating_control",
+    ];
+  }
+}
+
 function formatRegEx(format) {
   const regex = {
     "date-time": new RegExp(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|([+-]\d{2}):(\d{2}))$/),
@@ -206,6 +235,11 @@ function prepareExtRef(r) {
   return r;
 }
 
+function prepareVulnerability(v) {
+  setIdIfUndefined(v);
+  return v;
+}
+
 function prepareHash(r) {
   setIdIfUndefined(r);
   return r;
@@ -259,6 +293,7 @@ function prepareComponent(c, noID, includeSub) {
     preparePedigree(c.pedigree);
     prepareCompany(c, "manufacturer");
     prepareCompany(c, "supplier");
+    c._vulnerabilities = [];
     if (includeSub === true) {
       setIfUndefined(c, "components", Array());
       c.components.forEach((sc) => {prepareComponent(sc, noID, true)});
@@ -374,11 +409,41 @@ function loadDependencies(bom) {
   };
 }
 
+/**
+ * Load vulnerabilities for component from
+ * bom.vulnerabilities
+ */
+function prepareVulnerabilities(component, bom) {
+  component._vulnerabilities = [];
+  // if the component does not have a bom-ref, it can't be referenced by a vulnerability
+  if ((component["bom-ref"] == undefined) || (component["bom-ref"] == "")) return;
+  // iterate over vulnerabilities an check if on is referencing the component
+  for (let v of bom.vulnerabilities ?? []) {
+    // a vulnerability can reference multiple components
+    for (let a of v.affects ?? []) {
+      if (a.ref === component["bom-ref"]) {
+        // current component is referenced, store information in the component's
+        // _vulnerabilities array
+        component._vulnerabilities.push(
+          {
+            _id: crypto.randomUUID(),
+            id: v.id,
+            state: v?.analysis?.state ?? "",
+            justification: v?.analysis?.justification ?? "",
+            detail: v?.analysis?.detail ?? "",
+          }
+        )
+      }
+    }
+  }
+}
+
 function prepareBom(bom) {
   setIfUndefined(bom, "components", Array());
   prepareMetadata(bom);
   foreachComponent(bom, (c) => {
     prepareComponent(c);
+    prepareVulnerabilities(c, bom);
     return [true, undefined];
   });
   bom._flattenedComponents = flattenComponents(bom.components);
@@ -465,13 +530,9 @@ function finalizeSingleDependency(component, bom, componentById) {
 function finalizeDependencies(bom) {
   const componentById = {}
   setIfUndefined(bom, "dependencies", Array());
-  // create dictionary of components & add create bom-ref if missing
+  // create dictionary of components
   bom._flattenedComponents.forEach(c => {
     componentById[c._id] = c;
-      if ((c["bom-ref"] === undefined) || (c["bom-ref"] == "")) {
-        // not defined
-        c["bom-ref"] = crypto.randomUUID();
-      }
   });
   // Process bom.components
   bom._flattenedComponents.forEach((c) => {
@@ -508,10 +569,43 @@ function cleanupComponent(comp) {
   return comp;
 }
 
+function finalizeVulnerabilities(bom) {
+  console.log("xxx");
+  bom.vulnerabilities = [];
+  for (let c of bom._flattenedComponents) {
+    for (let v of c._vulnerabilities ?? []) {
+      bom.vulnerabilities.push(
+        {
+          id: v.id,
+          affects: [
+            {
+              ref: c["bom-ref"]
+            }
+          ],
+          analysis: {
+            state: v.state,
+            justification: v.justification,
+            detail: v.detail
+          },
+        }
+      );
+    }
+    delete c._vulnerabilities;
+  }
+  console.log(bom.vulnerabilities);
+}
+
 function finalizeBom(bom) {
   // _flattenedComponents is possibly outdated
   bom._flattenedComponents = flattenComponents(bom.components);
+  // Ensure component has bom-ref
+  for (let c of bom._flattenedComponents) {
+    if (c["bom-ref"] === undefined || c["bom-ref"] == "") {
+      c["bom-ref"] = crypto.randomUUID();
+    }
+  }
   finalizeDependencies(bom);
+  finalizeVulnerabilities(bom);
   bom._flattenedComponents.forEach((c) => {
     cleanupComponent(c);
   });
@@ -787,5 +881,8 @@ export {
   treeViewGetItemChildren,
   cleanupComponent,
   getParent,
-  findBomRefDuplicates
+  findBomRefDuplicates,
+  prepareVulnerability,
+  getVulnAnalysisStates,
+  getVulnAnalysisJustifications,
 };
