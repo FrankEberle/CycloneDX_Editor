@@ -32,6 +32,9 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import TextIncreaseIcon from '@mui/icons-material/TextIncrease';
 import TextDecreaseIcon from '@mui/icons-material/TextDecrease';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
+import Backdrop from '@mui/material/Backdrop';
+import CircularProgress from '@mui/material/CircularProgress';
 import { createTheme, ThemeProvider, CssBaseline, IconButton, ButtonGroup } from '@mui/material';
 import { useColorScheme  } from '@mui/material/styles';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
@@ -48,6 +51,7 @@ import DependencyGraphView from './DependencyGraphView';
 import SaveDialog from './SaveDialog';
 import TemplateDialog from './TemplateDialog';
 import ErrorDialog from './ErrorDialog';
+import ValidationDialog from './ValidationDialog';
 import GlobalStateProvider from './GlobalStateProvider';
 import GlobalStateContext from './GlobalStateContext';
 import { loadConfig} from './ConfigLoader';
@@ -168,6 +172,8 @@ function Inner({setFontSize}) {
   const [showSaveDialog, setShowSaveDialog] = React.useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = React.useState(false);
   const [showAboutDialog, setShowAboutDialog] = React.useState(false);
+  const [isValidating, setIsValidating] = React.useState(false);
+  const [validationResult, setValidationResult] = React.useState(null);
   const [err, setErr] = React.useState(undefined);
   const confirm = useConfirm();
   
@@ -235,6 +241,32 @@ function Inner({setFontSize}) {
     }
   }
 
+  async function validateBomOnline() {
+    const url = globalState.getObj("config").validationServiceUrl;
+    if (!url) return;
+    setIsValidating(true);
+    try {
+      const bomCopy = CycloneDX.deepCopy(bom);
+      const bomFinalized = CycloneDX.finalizeBom(bomCopy);
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(bomFinalized),
+      });
+      if (!response.ok) {
+        throw new Error(`Validation service returned status code ${response.status} (${response.statusText})`);
+      }
+      const data = await response.json();
+      setValidationResult(data);
+    } catch (error) {
+      setErr("Validation error: " + error.message);
+    } finally {
+      setIsValidating(false);
+    }
+  }
+
   const addBurgerMenuItems = Array();
   if (globalState.getObj("config").templates !== undefined) {
     addBurgerMenuItems.push(
@@ -251,6 +283,15 @@ function Inner({setFontSize}) {
         label: "Load Test SBOM",
         icon: <ScienceIcon/>,
         action: () => {loader(async () => {return await loadTextFileFromUrl(globalState.getObj("config").testBom)})},
+      }
+    );
+  }
+  if (globalState.getObj("config").validationServiceUrl) {
+    addBurgerMenuItems.push(
+      {
+        label: "Validate",
+        icon: <FactCheckIcon/>,
+        action: validateBomOnline,
       }
     );
   }
@@ -340,6 +381,16 @@ function Inner({setFontSize}) {
         err={err}
         closeAction={() => {setErr(undefined)}}
       />
+      <ValidationDialog
+        result={validationResult}
+        closeAction={() => setValidationResult(null)}
+      />
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 2 }}
+        open={isValidating}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
       <SaveDialog
         open={showSaveDialog}
         saveAction={async (data) => {
